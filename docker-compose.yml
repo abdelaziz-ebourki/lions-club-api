@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: lions-club-db
+    environment:
+      POSTGRES_DB: lions_club
+      POSTGRES_USER: lions_club
+      POSTGRES_PASSWORD: lions_club_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:
