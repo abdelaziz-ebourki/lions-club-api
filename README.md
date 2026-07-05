@@ -20,7 +20,3 @@ docker compose up -d
 ## API Documentation
 
 Once running, visit http://localhost:8080/swagger-ui.html
-
-## Project Convention
-
-This repo follows the `*-api` naming convention within the Lions Club FSBM project.
