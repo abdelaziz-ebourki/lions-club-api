@@ -1,15 +1,21 @@
 services:
-  postgres:
-    image: postgres:16-alpine
+  db:
+    image: postgres:15-alpine
     container_name: lions-club-db
-    environment:
-      POSTGRES_DB: lions_club
-      POSTGRES_USER: lions_club
-      POSTGRES_PASSWORD: lions_club_dev
+    restart: unless-stopped
     ports:
       - "5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-lions_club}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lions_club_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-lions_club}
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-lions_club} -d ${POSTGRES_DB:-lions_club}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:
