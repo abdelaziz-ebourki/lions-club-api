@@ -40,7 +40,11 @@
 
 *GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
 
-[Gates determined based on constitution file]
+- [ ] **G1 - API-First**: Are API contracts (OpenAPI) designed and reviewed before implementation?
+- [ ] **G2 - Security by Design**: Is authentication/authorization designed for every protected endpoint?
+- [ ] **G3 - Test-First (NON-NEGOTIABLE)**: Are failing tests written before implementation code?
+- [ ] **G4 - DB Migration Rigor**: Are schema changes planned via Flyway migrations (no manual DDL)?
+- [ ] **G5 - Clean Architecture**: Does the design respect Controller → Service → Repository layering?
 
 ## Project Structure
 
