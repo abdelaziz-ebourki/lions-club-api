@@ -1,22 +1,56 @@
-# lions-club-api
+# Lions Club FSBM REST API
 
 REST API for Lions Club FSBM, built with Spring Boot 3 + Java 21.
 
 ## Prerequisites
 
 - Java 21
-- Docker (for PostgreSQL)
+- Docker & Docker Compose
+- Maven (via `./mvnw`)
 
-## Getting Started
+## Quick Start
 
 ```bash
-# Start the database
+# 1. Start the database
+cp .env.example .env
 docker compose up -d
 
-# Run the application
+# 2. Start the application
 ./mvnw spring-boot:run
 ```
 
+The API will be available at `http://localhost:8080`.
+
 ## API Documentation
 
-Once running, visit http://localhost:8080/swagger-ui.html
+Once running, visit `http://localhost:8080/swagger-ui.html` (dev profile only).
+
+## Profiles
+
+- **dev** (default): Swagger UI enabled, debug logging, SQL logging
+- **prod**: Swagger UI disabled, minimal logging, env-based secrets
+
+Set with `SPRING_PROFILES_ACTIVE=prod`.
+
+## Project Structure
+
+```
+src/
+├── main/java/com/lionsclub/api/
+│   ├── config/          # OpenAPI, security, app config
+│   ├── domain/          # Domain entities by sub-package
+│   └── LionsClubApiApplication.java
+└── main/resources/
+    ├── application.yml
+    ├── application-{profile}.yml
+    └── db/migration/    # Flyway migrations
+```
+
+## Tech Stack
+
+- Spring Boot 3.4.4
+- Java 21
+- PostgreSQL 15
+- Flyway
+- SpringDoc OpenAPI
+- JWT (Auth0)
