@@ -54,6 +54,8 @@ class SchemaValidationTest {
 
             assertThat(rs.next()).isTrue();
             assertThat(rs.getString("column_name")).isEqualTo("updated_at");
+
+            assertThat(rs.next()).isFalse();
         }
     }
 }
