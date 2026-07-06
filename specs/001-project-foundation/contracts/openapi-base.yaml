@@ -1,0 +1,18 @@
+openapi: 3.0.3
+info:
+  title: Lions Club FSBM API
+  description: REST API for Lions Club FSBM — member management, events, and RSVPs
+  version: 0.0.1
+servers:
+  - url: http://localhost:8080
+    description: Local development
+components:
+  securitySchemes:
+    bearer-jwt:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Access token obtained from /api/auth/login
+security:
+  - bearer-jwt: []
+paths: {}
