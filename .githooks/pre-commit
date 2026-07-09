@@ -1,0 +1,28 @@
+#!/bin/sh
+#
+# Pre-commit hook — runs the test suite before allowing a commit.
+# If tests fail, the commit is aborted.
+#
+
+echo "🛡️  Running pre-commit checks..."
+
+STASH_NAME="pre-commit-$(date +%s)"
+git stash --quiet --keep-index --include-untracked -- "$STASH_NAME"
+STASH_RESULT=$?
+
+./mvnw test -q
+TEST_RESULT=$?
+
+if [ "$STASH_RESULT" = "0" ] && git stash list | grep -q "$STASH_NAME"; then
+    git stash pop --quiet
+fi
+
+if [ "$TEST_RESULT" -ne 0 ]; then
+    echo ""
+    echo "❌ Tests failed. Commit aborted."
+    echo "   Fix the failing tests before committing, or use --no-verify to bypass."
+    exit 1
+fi
+
+echo "✅ All tests pass. Proceeding with commit."
+exit 0

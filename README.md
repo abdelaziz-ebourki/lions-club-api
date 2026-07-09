@@ -8,16 +8,22 @@ REST API for Lions Club FSBM, built with Spring Boot 3 + Java 21.
 - Docker & Docker Compose
 - Maven (via `./mvnw`)
 
-## Quick Start
+## Setup
 
 ```bash
-# 1. Start the database
+# 1. Enable git hooks
+git config core.hooksPath .githooks
+
+# 2. Start the database
 cp .env.example .env
 docker compose up -d
 
-# 2. Start the application
+# 3. Start the application
 ./mvnw spring-boot:run
 ```
+
+The pre-commit hook runs `./mvnw test -q` before each commit. The pre-push hook runs
+`./mvnw verify` before each push. Bypass with `--no-verify` if needed.
 
 The API will be available at `http://localhost:8080`.
 
