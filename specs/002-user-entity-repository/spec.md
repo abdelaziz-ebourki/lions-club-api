@@ -59,12 +59,12 @@ Developers can represent and work with users in code through a well-defined type
 
 ### Functional Requirements
 
-- **FR-001**: System MUST define a `Role` enum with values `ADMIN` and `MEMBER` that maps to the VARCHAR `role` column in the `users` table
-- **FR-002**: System MUST provide a `User` JPA entity annotated to map to the `users` table, with all columns: `id` (UUID), `email` (unique), `passwordHash`, `firstName`, `lastName`, `role` (Role enum), `enabled` (boolean), `createdAt`, `updatedAt`
-- **FR-003**: System MUST configure `createdAt` and `updatedAt` fields to be automatically populated on persist/update
-- **FR-004**: System MUST provide a `UserRepository` Spring Data JPA interface
-- **FR-005**: System MUST expose a `findByEmail(String email)` query method on `UserRepository` returning `Optional<User>`
-- **FR-006**: System MUST locate entities and enums under the `com.lionsclub.api.domain.user` package and the repository under `com.lionsclub.api.infrastructure.persistence`
+- **FR-001**: System MUST define a user role type with exactly two values: `ADMIN` and `MEMBER`, and persist them as human-readable strings in the `role` column
+- **FR-002**: System MUST provide a `User` domain object that maps to the `users` database table, with all columns: unique `id` (UUID), unique `email`, `passwordHash`, `firstName`, `lastName`, `role` (ADMIN or MEMBER), `enabled` (boolean), `createdAt`, and `updatedAt` timestamps
+- **FR-003**: System MUST automatically populate `createdAt` when a record is first created and `updatedAt` whenever a record is modified
+- **FR-004**: System MUST provide a data access interface for `User` that supports standard create, read, update, and delete operations
+- **FR-005**: System MUST expose a lookup method to find a user by their email address, returning a result that can either contain the matching user or indicate no match was found
+- **FR-006**: System MUST locate user domain types (the user object and role type) under a `domain.user` package and the data access interface under a separate `infrastructure` package, following clean architecture layering
 
 ### Key Entities *(include if feature involves data)*
 
@@ -83,6 +83,6 @@ Developers can represent and work with users in code through a well-defined type
 ## Assumptions
 
 - The `V1__create_users_table.sql` Flyway migration is already present and defines the `users` table schema correctly
-- The `users` table uses `VARCHAR` for the `role` column — the JPA enum mapping will use `EnumType.STRING`
+- The `users` table uses a string column for the `role` field — the role type must be stored and retrieved as a readable string
 - JPA auto-ddl is set to `validate` or `none` (managed exclusively by Flyway), so entity-column mismatches will fail fast at startup
 - The project uses Lombok for boilerplate reduction (getters, setters, constructors)
