@@ -8,6 +8,11 @@ springdoc:
   swagger-ui:
     enabled: true
 
+app:
+  jwt:
+    secret: dev-jwt-secret-key-must-be-at-least-256-bits-long-for-hs256
+    expiration: 15m
+
 logging:
   level:
     com.lionsclub: DEBUG
