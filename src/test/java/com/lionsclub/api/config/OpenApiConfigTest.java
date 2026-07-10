@@ -29,7 +29,7 @@ class OpenApiConfigTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.info.title").value("Lions Club FSBM API"))
                 .andExpect(jsonPath("$.info.version").value("0.0.1"))
-                .andExpect(jsonPath("$.components.securitySchemes.bearer-jwt").exists());
+                .andExpect(jsonPath("$.components.securitySchemes.cookie-jwt").exists());
     }
 
     @Test

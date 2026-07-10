@@ -15,7 +15,7 @@ public class OpenApiConfig {
 
     @Bean
     public OpenAPI customOpenAPI() {
-        var securitySchemeName = "bearer-jwt";
+        var securitySchemeName = "cookie-jwt";
         return new OpenAPI()
                 .info(new Info()
                         .title("Lions Club FSBM API")
@@ -24,9 +24,9 @@ public class OpenApiConfig {
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()
                         .addSecuritySchemes(securitySchemeName, new SecurityScheme()
-                                .type(SecurityScheme.Type.HTTP)
-                                .scheme("bearer")
-                                .bearerFormat("JWT")
-                                .description("Access token obtained from /api/auth/login")));
+                                .type(SecurityScheme.Type.APIKEY)
+                                .in(SecurityScheme.In.COOKIE)
+                                .name("auth_token")
+                                .description("JWT obtained from /api/auth/login, sent as auth_token cookie")));
     }
 }
