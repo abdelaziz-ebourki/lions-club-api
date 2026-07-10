@@ -10,8 +10,8 @@ target/
 .classpath
 .vscode/
 .sonarlint/
-mvnw
 mvnw.cmd
+.mvn/wrapper/maven-wrapper.jar
 .DS_Store
 .opencode/
 .agents/
