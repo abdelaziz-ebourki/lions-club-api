@@ -42,7 +42,7 @@ class JwtTokenProviderTest {
     void shouldExtractUserIdFromToken() {
         UUID userId = UUID.randomUUID();
         String token = jwtTokenProvider.generateToken(userId, Role.ADMIN);
-        UUID extracted = jwtTokenProvider.getUserIdFromToken(token);
+        UUID extracted = UUID.fromString(jwtTokenProvider.validateToken(token).getSubject());
         assertThat(extracted).isEqualTo(userId);
     }
 
@@ -50,7 +50,7 @@ class JwtTokenProviderTest {
     void shouldExtractRoleFromToken() {
         UUID userId = UUID.randomUUID();
         String token = jwtTokenProvider.generateToken(userId, Role.ADMIN);
-        String role = jwtTokenProvider.getRoleFromToken(token);
+        String role = jwtTokenProvider.validateToken(token).getClaim("role").asString();
         assertThat(role).isEqualTo("ADMIN");
     }
 

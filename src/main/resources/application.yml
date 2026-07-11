@@ -40,5 +40,3 @@ management:
 app:
   jwt:
     secret: CHANGEME_IN_PRODUCTION_dev_secret_key_lions_club_fsbm_2026
-    access-token-expiration: 900000
-    refresh-token-expiration: 604800000

@@ -38,13 +38,4 @@ public class JwtTokenProvider {
         }
     }
 
-    public UUID getUserIdFromToken(String token) {
-        DecodedJWT decoded = validateToken(token);
-        return UUID.fromString(decoded.getSubject());
-    }
-
-    public String getRoleFromToken(String token) {
-        DecodedJWT decoded = validateToken(token);
-        return decoded.getClaim("role").asString();
-    }
 }

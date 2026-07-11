@@ -19,7 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
-@ActiveProfiles("test")
+@ActiveProfiles("dev")
 class SecurityConfigTest {
 
     @Autowired
@@ -52,5 +52,31 @@ class SecurityConfigTest {
                         .contentType("application/json")
                         .content("{}"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldRejectUnauthenticatedRequestToProtectedEndpointWithTrailingSlash() throws Exception {
+        mockMvc.perform(post("/api/events/")
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldRejectMemberRequestToAdminEndpoint() throws Exception {
+        mockMvc.perform(post("/api/events")
+                        .with(user("member@test.com").roles("MEMBER"))
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldRejectMemberRequestToAdminEndpointWithTrailingSlash() throws Exception {
+        mockMvc.perform(post("/api/events/")
+                        .with(user("member@test.com").roles("MEMBER"))
+                        .contentType("application/json")
+                        .content("{}"))
+                .andExpect(status().isForbidden());
     }
 }

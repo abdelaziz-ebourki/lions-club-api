@@ -154,6 +154,35 @@ description: "Task list for JWT Infrastructure feature"
 
 ---
 
+## Phase 7: Fix Review Issues (Post-PR Review)
+
+**Purpose**: Address 7 issues identified by PR #12 review — 2 bugs, 4 cleanups, 1 test gap
+
+**Trigger**: PR #12 review feedback
+
+### Bug Fixes
+
+- [x] T039 [P] Fix trailing-slash POST bypass and clean up SecurityConfig.java — add `/api/events/` as valid path for POST matcher, extract POST/PUT/PATCH constants, remove unused `HttpMethod` import in `src/main/java/com/lionsclub/api/security/SecurityConfig.java`
+- [x] T040 [P] Sync cookie Max-Age with JWT expiry in AuthController.java — inject `JwtConfig` and pass `jwtConfig.getExpiration()` as maxAge for login/register cookies in `src/main/java/com/lionsclub/api/web/AuthController.java`
+
+### Cleanup Tasks (Parallel — Different Files)
+
+- [x] T041 [P] Remove stale `app.jwt.access-token-expiration` and `app.jwt.refresh-token-expiration` properties from `src/main/resources/application.yml`
+- [x] T042 [P] Fix SecurityConfigTest profile — change `@ActiveProfiles("test")` to `@ActiveProfiles("dev")` in `src/test/java/com/lionsclub/api/security/SecurityConfigTest.java`
+- [x] T043 [P] Remove unused `getUserIdFromToken` and `getRoleFromToken` methods from `src/main/java/com/lionsclub/api/security/JwtTokenProvider.java`; update `JwtTokenProviderTest` to use `validateToken` + direct claim extraction instead
+
+### Test Gap
+
+- [x] T044 Add trailing-slash guard test (`anonymousPostEventsWithTrailingSlash_shouldReturn401` / `memberPostEventsWithTrailingSlash_shouldReturn403`) to `src/test/java/com/lionsclub/api/security/SecurityConfigTest.java`; add cookie max-age assertions (`maxAge("auth_token", 900L)`) to login/register tests in `src/test/java/com/lionsclub/api/web/AuthControllerTest.java`
+
+### Validation
+
+- [x] T045 Run `./mvnw verify` to confirm all 7 fixes compile and all tests pass (PMD 0, Error Prone 0)
+
+**Checkpoint**: All review issues resolved, PR #12 ready for re-review
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies
@@ -163,7 +192,8 @@ description: "Task list for JWT Infrastructure feature"
 - **US1 (Phase 3)**: Depends on Foundational (needs JwtTokenProvider for filter)
 - **US2 (Phase 4)**: Depends on US1 completion (needs SecurityConfig + JwtAuthenticationFilter)
 - **US3 (Phase 5)**: Depends on US2 completion (needs auth flow working before role checks are meaningful)
-- **Polish (Final Phase)**: Depends on all user stories being complete
+- **Polish (Phase 6)**: Depends on all user stories being complete
+- **Fix Review Issues (Phase 7)**: Depends on Polish — runs after PR #12 review
 
 ### User Story Dependencies
 
@@ -185,6 +215,7 @@ description: "Task list for JWT Infrastructure feature"
 - T012-T017 (AuthControllerTest scenarios) can run in parallel
 - T018-T020 (filter tests) can run in parallel
 - T028-T030 (role tests) can run in parallel
+- T039-T043 (Phase 7 fixes: different files, independent) can run in parallel
 
 ---
 
@@ -232,7 +263,7 @@ Task: "Write AuthControllerTest — validation errors"
 
 ### Single Developer Strategy
 
-Sequential execution in order: Phase 1 → Phase 2 → Phase 3 (US1) → Phase 4 (US2) → Phase 5 (US3) → Phase 6. Within each phase, write failing tests first, then implement, then refactor (Red-Green-Refactor).
+Sequential execution in order: Phase 1 → Phase 2 → Phase 3 (US1) → Phase 4 (US2) → Phase 5 (US3) → Phase 6 → Phase 7. Within each phase, write failing tests first, then implement, then refactor (Red-Green-Refactor).
 
 ---
 

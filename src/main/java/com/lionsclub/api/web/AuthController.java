@@ -1,6 +1,7 @@
 package com.lionsclub.api.web;
 
 import com.lionsclub.api.security.AuthService;
+import com.lionsclub.api.security.JwtConfig;
 import com.lionsclub.api.web.dto.AuthResponse;
 import com.lionsclub.api.web.dto.LoginRequest;
 import com.lionsclub.api.web.dto.RegisterRequest;
@@ -21,13 +22,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtConfig jwtConfig;
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         var result = authService.login(request.email(), request.password());
         if (result.success()) {
             return ResponseEntity.ok()
-                    .header(HttpHeaders.SET_COOKIE, createAuthCookie(result.token(), null))
+                    .header(HttpHeaders.SET_COOKIE, createAuthCookie(result.token(), jwtConfig.getExpiration()))
                     .body(new AuthResponse("Login successful"));
         }
         return ResponseEntity.status(401)
@@ -41,7 +43,7 @@ public class AuthController {
                 request.firstName(), request.lastName());
         if (result.success()) {
             return ResponseEntity.status(201)
-                    .header(HttpHeaders.SET_COOKIE, createAuthCookie(result.token(), null))
+                    .header(HttpHeaders.SET_COOKIE, createAuthCookie(result.token(), jwtConfig.getExpiration()))
                     .body(new AuthResponse("Registration successful"));
         }
         if (AuthService.ERROR_DUPLICATE_EMAIL.equals(result.error())) {
