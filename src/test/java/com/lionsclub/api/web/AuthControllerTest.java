@@ -62,6 +62,7 @@ class AuthControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(cookie().exists("auth_token"))
+                .andExpect(cookie().maxAge("auth_token", 900))
                 .andExpect(jsonPath("$.message").value("Login successful"));
     }
 
@@ -85,6 +86,7 @@ class AuthControllerTest {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(cookie().exists("auth_token"))
+                .andExpect(cookie().maxAge("auth_token", 900))
                 .andExpect(jsonPath("$.message").value("Registration successful"));
     }
 
