@@ -31,7 +31,7 @@ class AuthServiceTest {
 
     @BeforeEach
     void setUp() {
-        passwordEncoder = new BCryptPasswordEncoder();
+        passwordEncoder = new BCryptPasswordEncoder(4);
         jwtConfig = new JwtConfig();
         jwtConfig.setSecret("test-secret-key-that-is-at-least-256-bits-long-for-hs256");
         jwtConfig.setExpiration(java.time.Duration.ofMinutes(15));

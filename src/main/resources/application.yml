@@ -37,6 +37,4 @@ management:
     health:
       show-details: always
 
-app:
-  jwt:
-    secret: CHANGEME_IN_PRODUCTION_dev_secret_key_lions_club_fsbm_2026
+

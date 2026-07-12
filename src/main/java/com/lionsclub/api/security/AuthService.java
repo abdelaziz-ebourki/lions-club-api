@@ -19,18 +19,21 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtTokenProvider jwtTokenProvider;
 
+    private static final String DUMMY_PASSWORD_HASH = "$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36PQm4sEPhMNPfFhpYNnfOq";
+
     public AuthResult login(String email, String password) {
         var userOpt = userRepository.findByEmail(email);
-        if (userOpt.isEmpty()) {
+        var user = userOpt.orElse(null);
+        String expectedHash = user != null ? user.getPasswordHash() : DUMMY_PASSWORD_HASH;
+
+        if (!passwordEncoder.matches(password, expectedHash)) {
             return AuthResult.failure("Invalid credentials");
         }
-        var user = userOpt.get();
-        if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+
+        if (user == null || !user.isEnabled()) {
             return AuthResult.failure("Invalid credentials");
         }
-        if (!user.isEnabled()) {
-            return AuthResult.failure("Invalid credentials");
-        }
+
         String token = jwtTokenProvider.generateToken(user.getId(), user.getRole());
         return AuthResult.success(token);
     }
