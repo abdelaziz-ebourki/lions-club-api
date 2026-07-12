@@ -183,6 +183,14 @@ description: "Task list for JWT Infrastructure feature"
 
 ---
 
+## Phase 8: Convergence
+
+**Purpose**: Close gaps identified by convergence assessment between spec/plan/tasks and current code
+
+- [x] T046 Update `contracts/auth-api.md` — remove or update the "Response 401 — Account disabled" section (lines 39-46) that documents `"error": "Account disabled"`; per the security fix, all authentication failures now return `"Invalid credentials"` (contradicts)
+
+---
+
 ## Dependencies & Execution Order
 
 ### Phase Dependencies

@@ -36,15 +36,6 @@ Content-Type: application/json
 }
 ```
 
-### Response 401 — Account disabled
-```
-Content-Type: application/json
-
-{
-  "error": "Account disabled"
-}
-```
-
 ### Validation Rules
 | Field | Rule |
 |-------|------|
