@@ -8,18 +8,23 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.lionsclub.api.domain.user.Role;
 import java.time.Instant;
 import java.util.UUID;
-import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 @Component
-@RequiredArgsConstructor
 public class JwtTokenProvider {
 
     private final JwtConfig jwtConfig;
+    private final Algorithm algorithm;
+    private final JWTVerifier verifier;
+
+    public JwtTokenProvider(JwtConfig jwtConfig) {
+        this.jwtConfig = jwtConfig;
+        this.algorithm = Algorithm.HMAC256(jwtConfig.getSecret());
+        this.verifier = JWT.require(algorithm).build();
+    }
 
     public String generateToken(UUID userId, Role role) {
         var now = Instant.now();
-        var algorithm = Algorithm.HMAC256(jwtConfig.getSecret());
         return JWT.create()
                 .withSubject(userId.toString())
                 .withClaim("role", role.name())
@@ -30,8 +35,6 @@ public class JwtTokenProvider {
 
     public DecodedJWT validateToken(String token) {
         try {
-            var algorithm = Algorithm.HMAC256(jwtConfig.getSecret());
-            JWTVerifier verifier = JWT.require(algorithm).build();
             return verifier.verify(token);
         } catch (JWTVerificationException | IllegalArgumentException e) {
             throw new RuntimeException("Invalid JWT token", e);

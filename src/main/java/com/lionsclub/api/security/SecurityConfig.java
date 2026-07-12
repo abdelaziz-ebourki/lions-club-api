@@ -6,6 +6,7 @@ import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -28,12 +29,10 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
     private static final String ADMIN = "ADMIN";
-    private static final String DELETE = "DELETE";
-    private static final String POST = "POST";
-    private static final String PUT = "PUT";
-    private static final String PATCH = "PATCH";
-    private static final String EVENTS_PATH = "/api/events/";
-    private static final String EVENTS_ROOT = "/api/events";
+    private static final String EVENTS_PATH = "/api/events/**";
+    private static final String MEMBERS_PATH = "/api/members/**";
+    private static final String FORUM_REPLIES_PATH = "/api/forum/replies/**";
+    private static final String FORUM_THREADS_PATH = "/api/forum/threads/**";
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final ObjectMapper objectMapper;
@@ -52,30 +51,18 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/error").permitAll()
-                        .requestMatchers(r -> "GET".equals(r.getMethod())
-                                && (EVENTS_ROOT.equals(r.getRequestURI())
-                                || r.getRequestURI().startsWith(EVENTS_PATH))).permitAll()
-                        .requestMatchers(r -> POST.equals(r.getMethod())
-                                && (EVENTS_ROOT.equals(r.getRequestURI())
-                                || EVENTS_PATH.equals(r.getRequestURI()))).hasRole(ADMIN)
-                        .requestMatchers(r -> PUT.equals(r.getMethod())
-                                && r.getRequestURI().startsWith(EVENTS_PATH)).hasRole(ADMIN)
-                        .requestMatchers(r -> DELETE.equals(r.getMethod())
-                                && r.getRequestURI().startsWith(EVENTS_PATH)).hasRole(ADMIN)
-                        .requestMatchers(r -> r.getRequestURI().startsWith("/api/admin/")).hasRole(ADMIN)
-                        .requestMatchers(r -> "/api/contact".equals(r.getRequestURI())).hasRole(ADMIN)
-                        .requestMatchers(r -> POST.equals(r.getMethod())
-                                && "/api/members".equals(r.getRequestURI())).hasRole(ADMIN)
-                        .requestMatchers(r -> PUT.equals(r.getMethod())
-                                && r.getRequestURI().startsWith("/api/members/")).hasRole(ADMIN)
-                        .requestMatchers(r -> DELETE.equals(r.getMethod())
-                                && r.getRequestURI().startsWith("/api/members/")).hasRole(ADMIN)
-                        .requestMatchers(r -> DELETE.equals(r.getMethod())
-                                && r.getRequestURI().startsWith("/api/forum/replies/")).hasRole(ADMIN)
-                        .requestMatchers(r -> PATCH.equals(r.getMethod())
-                                && r.getRequestURI().startsWith("/api/forum/threads/")).hasRole(ADMIN)
-                        .requestMatchers(r -> DELETE.equals(r.getMethod())
-                                && r.getRequestURI().startsWith("/api/forum/threads/")).hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.GET, EVENTS_PATH).permitAll()
+                        .requestMatchers(HttpMethod.POST, EVENTS_PATH).hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.PUT, EVENTS_PATH).hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.DELETE, EVENTS_PATH).hasRole(ADMIN)
+                        .requestMatchers("/api/admin/**").hasRole(ADMIN)
+                        .requestMatchers("/api/contact").hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.POST, "/api/members").hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.PUT, MEMBERS_PATH).hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.DELETE, MEMBERS_PATH).hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.DELETE, FORUM_REPLIES_PATH).hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.PATCH, FORUM_THREADS_PATH).hasRole(ADMIN)
+                        .requestMatchers(HttpMethod.DELETE, FORUM_THREADS_PATH).hasRole(ADMIN)
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(ex -> ex
