@@ -14,4 +14,5 @@ public class JwtConfig {
 
     private String secret;
     private Duration expiration = Duration.ofMinutes(15);
+    private boolean secure;
 }
