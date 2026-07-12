@@ -21,3 +21,4 @@ logging:
 app:
   jwt:
     secret: ${JWT_SECRET}
+    secure: true

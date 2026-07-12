@@ -46,11 +46,7 @@ public class AuthController {
                     .header(HttpHeaders.SET_COOKIE, createAuthCookie(result.token(), jwtConfig.getExpiration()))
                     .body(new AuthResponse("Registration successful"));
         }
-        if (AuthService.ERROR_DUPLICATE_EMAIL.equals(result.error())) {
-            return ResponseEntity.status(409)
-                    .body(java.util.Map.of("error", result.error()));
-        }
-        return ResponseEntity.badRequest()
+        return ResponseEntity.status(409)
                 .body(java.util.Map.of("error", result.error()));
     }
 
@@ -64,6 +60,7 @@ public class AuthController {
     private String createAuthCookie(String token, Duration maxAge) {
         var builder = ResponseCookie.from("auth_token", token)
                 .httpOnly(true)
+                .secure(jwtConfig.isSecure())
                 .sameSite("Lax")
                 .path("/");
         if (maxAge != null) {
