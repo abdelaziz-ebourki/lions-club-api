@@ -4,8 +4,10 @@ import com.lionsclub.api.domain.user.Role;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -23,16 +25,17 @@ public class AuthService {
             return AuthResult.failure("Invalid credentials");
         }
         var user = userOpt.get();
-        if (!user.isEnabled()) {
-            return AuthResult.failure("Account disabled");
-        }
         if (!passwordEncoder.matches(password, user.getPasswordHash())) {
+            return AuthResult.failure("Invalid credentials");
+        }
+        if (!user.isEnabled()) {
             return AuthResult.failure("Invalid credentials");
         }
         String token = jwtTokenProvider.generateToken(user.getId(), user.getRole());
         return AuthResult.success(token);
     }
 
+    @Transactional
     public AuthResult register(String email, String password, String firstName, String lastName) {
         if (userRepository.findByEmail(email).isPresent()) {
             return AuthResult.failure(ERROR_DUPLICATE_EMAIL);
@@ -44,7 +47,11 @@ public class AuthService {
         user.setLastName(lastName);
         user.setRole(Role.MEMBER);
         user.setEnabled(true);
-        user = userRepository.save(user);
+        try {
+            user = userRepository.save(user);
+        } catch (DataIntegrityViolationException e) {
+            return AuthResult.failure(ERROR_DUPLICATE_EMAIL);
+        }
         String token = jwtTokenProvider.generateToken(user.getId(), user.getRole());
         return AuthResult.success(token);
     }
