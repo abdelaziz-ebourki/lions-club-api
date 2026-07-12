@@ -2,18 +2,21 @@ package com.lionsclub.api.domain.user;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.lionsclub.api.TestcontainersConfiguration;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
 
 @SpringBootTest
 @ActiveProfiles("dev")
 @Sql(statements = "DELETE FROM users", executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@ImportTestcontainers(TestcontainersConfiguration.class)
 class UserRepositoryTest {
 
     @Autowired
