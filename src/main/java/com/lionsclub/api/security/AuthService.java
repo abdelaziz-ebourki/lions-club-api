@@ -3,6 +3,8 @@ package com.lionsclub.api.security;
 import com.lionsclub.api.domain.user.Role;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;
+import com.lionsclub.api.web.dto.UserResponse;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -57,6 +59,25 @@ public class AuthService {
         }
         String token = jwtTokenProvider.generateToken(user.getId(), user.getRole());
         return AuthResult.success(token);
+    }
+
+    public UserResponse getCurrentUser(UUID userId) {
+        return userRepository.findById(userId)
+                .filter(User::isEnabled)
+                .map(user -> new UserResponse(
+                        user.getId(),
+                        user.getEmail(),
+                        user.getFirstName(),
+                        user.getLastName(),
+                        user.getRole().name()))
+                .orElse(null);
+    }
+
+    public String refreshToken(UUID userId) {
+        return userRepository.findById(userId)
+                .filter(User::isEnabled)
+                .map(user -> jwtTokenProvider.generateToken(user.getId(), user.getRole()))
+                .orElse(null);
     }
 
     public record AuthResult(boolean success, String token, String error) {

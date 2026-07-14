@@ -1,3 +1,3 @@
 {
-  "feature_directory": "specs/003-jwt-infrastructure"
+  "feature_directory": "specs/004-complete-auth-endpoints"
 }
