@@ -1,5 +1,6 @@
 package com.lionsclub.api.web;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.cookie;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -9,6 +10,7 @@ import com.lionsclub.api.TestcontainersConfiguration;
 import com.lionsclub.api.domain.user.Role;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,8 +20,8 @@ import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -137,5 +139,101 @@ class AuthControllerTest {
                                 {"email": "", "password": ""}
                                 """))
                 .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldReturnUserInfoWhenAuthenticated() throws Exception {
+        var loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email": "existing@test.com", "password": "password123"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var cookie = loginResult.getResponse().getCookie("auth_token");
+
+        mockMvc.perform(get("/api/auth/me").cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").isString())
+                .andExpect(jsonPath("$.email").value("existing@test.com"))
+                .andExpect(jsonPath("$.firstName").value("Existing"))
+                .andExpect(jsonPath("$.lastName").value("User"))
+                .andExpect(jsonPath("$.role").value("MEMBER"));
+    }
+
+    @Test
+    void shouldReturn401ForMeWhenNotAuthenticated() throws Exception {
+        mockMvc.perform(get("/api/auth/me"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Unauthorized"));
+    }
+
+    @Test
+    void shouldReturn401ForMeWithExpiredOrInvalidToken() throws Exception {
+        mockMvc.perform(get("/api/auth/me")
+                        .cookie(new Cookie("auth_token", "invalid-token")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Unauthorized"));
+    }
+
+    @Test
+    void shouldRefreshTokenWhenAuthenticated() throws Exception {
+        var loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email": "existing@test.com", "password": "password123"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var cookie = loginResult.getResponse().getCookie("auth_token");
+
+        mockMvc.perform(post("/api/auth/refresh").cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(cookie().exists("auth_token"))
+                .andExpect(cookie().httpOnly("auth_token", true))
+                .andExpect(jsonPath("$.message").value("Token refreshed"));
+    }
+
+    @Test
+    void shouldReturn401ForRefreshWhenNotAuthenticated() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Unauthorized"));
+    }
+
+    @Test
+    void shouldReturn401ForRefreshWithExpiredOrInvalidToken() throws Exception {
+        mockMvc.perform(post("/api/auth/refresh")
+                        .cookie(new Cookie("auth_token", "invalid-token")))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.error").value("Unauthorized"));
+    }
+
+    @Test
+    void chain_shouldWorkAfterRefresh() throws Exception {
+        var loginResult = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email": "existing@test.com", "password": "password123"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var loginCookie = loginResult.getResponse().getCookie("auth_token");
+
+        var refreshResult = mockMvc.perform(post("/api/auth/refresh").cookie(loginCookie))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var newCookie = refreshResult.getResponse().getCookie("auth_token");
+
+        mockMvc.perform(get("/api/auth/me").cookie(newCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("existing@test.com"))
+                .andExpect(jsonPath("$.firstName").value("Existing"))
+                .andExpect(jsonPath("$.lastName").value("User"))
+                .andExpect(jsonPath("$.role").value("MEMBER"));
     }
 }
