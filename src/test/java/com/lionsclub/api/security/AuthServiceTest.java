@@ -7,6 +7,7 @@ import static org.mockito.Mockito.when;
 import com.lionsclub.api.domain.user.Role;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;
+import com.lionsclub.api.web.dto.UserResponse;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -73,5 +74,92 @@ class AuthServiceTest {
 
         assertThat(result.success()).isFalse();
         assertThat(result.error()).isEqualTo(AuthService.ERROR_DUPLICATE_EMAIL);
+    }
+
+    @Test
+    void getCurrentUser_shouldReturnUserResponse() {
+        var userId = UUID.randomUUID();
+        var user = new User();
+        user.setId(userId);
+        user.setEmail("test@test.com");
+        user.setFirstName("Test");
+        user.setLastName("User");
+        user.setRole(Role.MEMBER);
+        user.setEnabled(true);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        var response = authService.getCurrentUser(userId);
+
+        assertThat(response).isNotNull();
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.email()).isEqualTo("test@test.com");
+        assertThat(response.firstName()).isEqualTo("Test");
+        assertThat(response.lastName()).isEqualTo("User");
+        assertThat(response.role()).isEqualTo("MEMBER");
+    }
+
+    @Test
+    void getCurrentUser_shouldReturnNullForDisabledUser() {
+        var userId = UUID.randomUUID();
+        var user = new User();
+        user.setId(userId);
+        user.setEmail("disabled@test.com");
+        user.setEnabled(false);
+        user.setRole(Role.MEMBER);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        var response = authService.getCurrentUser(userId);
+
+        assertThat(response).isNull();
+    }
+
+    @Test
+    void getCurrentUser_shouldReturnNullForNonExistentUser() {
+        var userId = UUID.randomUUID();
+
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        var response = authService.getCurrentUser(userId);
+
+        assertThat(response).isNull();
+    }
+
+    @Test
+    void refreshToken_shouldIssueNewToken() {
+        var userId = UUID.randomUUID();
+        var user = new User();
+        user.setId(userId);
+        user.setEmail("refresh@test.com");
+        user.setFirstName("Refresh");
+        user.setLastName("User");
+        user.setRole(Role.MEMBER);
+        user.setEnabled(true);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        var token = authService.refreshToken(userId);
+
+        assertThat(token).isNotNull();
+        var decoded = jwtTokenProvider.validateToken(token);
+        assertThat(decoded.getSubject()).isEqualTo(userId.toString());
+        assertThat(decoded.getClaim("role").asString()).isEqualTo("MEMBER");
+    }
+
+    @Test
+    void refreshToken_shouldReturnNullForDisabledUser() {
+        var userId = UUID.randomUUID();
+        var user = new User();
+        user.setId(userId);
+        user.setEmail("disabled@test.com");
+        user.setEnabled(false);
+        user.setRole(Role.MEMBER);
+
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+        var token = authService.refreshToken(userId);
+
+        assertThat(token).isNull();
     }
 }
