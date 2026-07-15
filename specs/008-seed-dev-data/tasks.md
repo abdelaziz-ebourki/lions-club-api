@@ -44,7 +44,7 @@ description: "Task list for Seed Data / Dev Data Setup"
 
 - [x] T003 [P] Write test `seedsDataWhenDatabaseIsEmpty` in `src/test/java/com/lionsclub/api/config/DataSeederTest.java` — verifies that when `userRepository.count() == 0` and `@Profile("dev")` is active, seed users and events are inserted; assert users exist via `userRepository.findByEmail()`
 - [x] T004 [P] Write test `skipsSeedingWhenDatabaseHasData` in `src/test/java/com/lionsclub/api/config/DataSeederTest.java` — pre-inserts a user, runs seeder, verifies no duplicates (count unchanged)
-- [x] T005 [P] Write test `doesNotSeedInNonDevProfile` in `src/test/java/com/lionsclub/api/config/DataSeederTest.java` — runs seeder with inactive `"dev"` profile, verifies no data inserted
+- [x] T005 [P] Write test `doesNotSeedInNonDevProfile` in `src/test/java/com/lionsclub/api/config/DataSeederTest.java` — verifies `DataSeeder` bean does not exist in non-dev profile via `ApplicationContext.containsBean("dataSeeder")`
 - [x] T006 [P] Write test `seededUserPasswordsAreBcryptHashed` in `src/test/java/com/lionsclub/api/config/DataSeederTest.java` — retrieves seeded admin user, asserts `passwordEncoder.matches("admin123", user.getPasswordHash())`
 - [x] T007 [P] Write test `seededEventsHaveCorrectFields` in `src/test/java/com/lionsclub/api/config/DataSeederTest.java` — fetches events by title, asserts all fields match expected values from data-model.md
 
@@ -109,6 +109,8 @@ description: "Task list for Seed Data / Dev Data Setup"
 **Purpose**: Final validation, documentation updates, profile verification.
 
 - [x] T021 Run full test suite: `./mvnw test` — 106/106 tests pass
+- [x] T024 Fix charset portability: replace `stringId.getBytes()` with `stringId.getBytes(StandardCharsets.UTF_8)` in `DataSeeder.java` and `DataSeederTest.java`
+- [x] T025 Fix JSONPath assertions: replace `.value()` with combined filter + `.exists()` in `SeedDataEventIntegrationTest.seededEventFieldsMatchMockData` to avoid List-vs-scalar comparison
 - [ ] T022 [P] Run quickstart.md validation scenarios 1–6 manually or via script
 - [ ] T023 [P] Verify seed data is NOT loaded when running with `spring.profiles.active=prod` — application starts without seed logs
 

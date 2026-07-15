@@ -7,6 +7,7 @@ import com.lionsclub.api.domain.user.Role;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.EventRepository;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -91,7 +92,7 @@ public class DataSeeder implements CommandLineRunner {
     private User createUser(String stringId, String firstName, String lastName,
                             String email, String plainPassword, Role role) {
         var user = new User();
-        user.setId(UUID.nameUUIDFromBytes(stringId.getBytes()));
+        user.setId(UUID.nameUUIDFromBytes(stringId.getBytes(StandardCharsets.UTF_8)));
         user.setFirstName(firstName);
         user.setLastName(lastName);
         user.setEmail(email);

@@ -63,13 +63,9 @@ class SeedDataEventIntegrationTest {
     void seededEventFieldsMatchMockData() throws Exception {
         mockMvc.perform(get("/api/events?status=upcoming"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[?(@.title == 'Annual Charity Gala 2026')].description")
-                        .value("Join us for an elegant evening of dinner, auctions, and entertainment to raise funds for local education initiatives."))
-                .andExpect(jsonPath("$[?(@.title == 'Annual Charity Gala 2026')].location")
-                        .value("Hyatt Regency Casablanca"))
-                .andExpect(jsonPath("$[?(@.title == 'Annual Charity Gala 2026')].category")
-                        .value("FUNDRAISER"))
-                .andExpect(jsonPath("$[?(@.title == 'Annual Charity Gala 2026')].status")
-                        .value("upcoming"));
+                .andExpect(jsonPath("$[?(@.title == 'Annual Charity Gala 2026' && @.description == 'Join us for an elegant evening of dinner, auctions, and entertainment to raise funds for local education initiatives.')]").exists())
+                .andExpect(jsonPath("$[?(@.title == 'Annual Charity Gala 2026' && @.location == 'Hyatt Regency Casablanca')]").exists())
+                .andExpect(jsonPath("$[?(@.title == 'Annual Charity Gala 2026' && @.category == 'FUNDRAISER')]").exists())
+                .andExpect(jsonPath("$[?(@.title == 'Annual Charity Gala 2026' && @.status == 'upcoming')]").exists());
     }
 }
