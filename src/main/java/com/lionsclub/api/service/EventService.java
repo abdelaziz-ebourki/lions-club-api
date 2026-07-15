@@ -3,8 +3,10 @@ package com.lionsclub.api.service;
 import com.lionsclub.api.domain.event.Event;
 import com.lionsclub.api.domain.event.EventCategory;
 import com.lionsclub.api.domain.event.EventStatus;
+import com.lionsclub.api.domain.rsvp.RsvpStatus;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.EventRepository;
+import com.lionsclub.api.infrastructure.persistence.RsvpRepository;
 import com.lionsclub.api.web.dto.EventRequest;
 import com.lionsclub.api.web.dto.EventResponse;
 import java.time.LocalDate;
@@ -13,6 +15,7 @@ import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -28,6 +31,7 @@ public class EventService {
     private static final String STATUS_PAST = "past";
 
     private final EventRepository eventRepository;
+    private final RsvpRepository rsvpRepository;
 
     public List<EventResponse> listEvents(String statusFilter) {
         var now = LocalDateTime.now();
@@ -113,6 +117,14 @@ public class EventService {
 
     private EventResponse toResponse(Event event) {
         var startDateTime = event.getStartDateTime();
+        var rsvpCounts = getRsvpCounts(event.getId());
+        var rsvpCount = rsvpCounts.values().stream().mapToInt(Long::intValue).sum();
+        var rsvpBreakdown = Map.of(
+                "yes", rsvpCounts.getOrDefault(RsvpStatus.YES, 0L).intValue(),
+                "no", rsvpCounts.getOrDefault(RsvpStatus.NO, 0L).intValue(),
+                "maybe", rsvpCounts.getOrDefault(RsvpStatus.MAYBE, 0L).intValue()
+        );
+
         return new EventResponse(
                 event.getId(),
                 event.getTitle(),
@@ -122,9 +134,18 @@ public class EventService {
                 event.getLocation(),
                 event.getCategory().name(),
                 deriveFrontendStatus(event),
-                0,
+                rsvpCount,
+                rsvpBreakdown,
                 event.getCreatedAt(),
                 event.getUpdatedAt()
+        );
+    }
+
+    private Map<RsvpStatus, Long> getRsvpCounts(UUID eventId) {
+        return Map.of(
+                RsvpStatus.YES, rsvpRepository.countByEventIdAndStatus(eventId, RsvpStatus.YES),
+                RsvpStatus.NO, rsvpRepository.countByEventIdAndStatus(eventId, RsvpStatus.NO),
+                RsvpStatus.MAYBE, rsvpRepository.countByEventIdAndStatus(eventId, RsvpStatus.MAYBE)
         );
     }
 
