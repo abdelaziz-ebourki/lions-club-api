@@ -30,12 +30,14 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class EventController {
 
+    private static final String OK = "200";
+
     private final EventService eventService;
     private final UserRepository userRepository;
 
     @Operation(summary = "List all events",
             description = "Public endpoint. Optionally filter by status (upcoming, ongoing, past).")
-    @ApiResponse(responseCode = "200", description = "List of events",
+    @ApiResponse(responseCode = OK, description = "List of events",
             content = @Content(schema = @Schema(implementation = EventResponse.class)))
     @ApiResponse(responseCode = "400", description = "Invalid status filter")
     @GetMapping
@@ -50,7 +52,7 @@ public class EventController {
 
     @Operation(summary = "Get single event",
             description = "Public endpoint. Returns event details by ID.")
-    @ApiResponse(responseCode = "200", description = "Event details",
+    @ApiResponse(responseCode = OK, description = "Event details",
             content = @Content(schema = @Schema(implementation = EventResponse.class)))
     @ApiResponse(responseCode = "404", description = "Event not found")
     @GetMapping("/{id}")
@@ -81,7 +83,7 @@ public class EventController {
 
     @Operation(summary = "Update an event",
             description = "Admin only. Full-object replacement of an existing event.")
-    @ApiResponse(responseCode = "200", description = "Event updated",
+    @ApiResponse(responseCode = OK, description = "Event updated",
             content = @Content(schema = @Schema(implementation = EventResponse.class)))
     @ApiResponse(responseCode = "400", description = "Validation error")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
@@ -98,7 +100,7 @@ public class EventController {
 
     @Operation(summary = "Delete an event",
             description = "Admin only. Removes an event from the system.")
-    @ApiResponse(responseCode = "200", description = "Event deleted")
+    @ApiResponse(responseCode = OK, description = "Event deleted")
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @ApiResponse(responseCode = "403", description = "Forbidden - admin only")
     @ApiResponse(responseCode = "404", description = "Event not found")
