@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.lionsclub.api.TestcontainersConfiguration;
 import com.lionsclub.api.domain.event.Event;
+import com.lionsclub.api.domain.event.EventCategory;
 import com.lionsclub.api.domain.event.EventStatus;
 import com.lionsclub.api.domain.user.Role;
 import com.lionsclub.api.domain.user.User;
@@ -49,6 +50,7 @@ class EventRepositoryTest {
         event.setStartDateTime(LocalDateTime.of(2026, 8, 1, 10, 0));
         event.setEndDateTime(LocalDateTime.of(2026, 8, 1, 18, 0));
         event.setStatus(status);
+        event.setCategory(EventCategory.COMMUNITY);
         event.setCreatedBy(eventCreator);
         return event;
     }
