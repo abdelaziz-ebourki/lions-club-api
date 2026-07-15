@@ -152,7 +152,7 @@ public class EventService {
             case STATUS_PAST -> EventStatus.COMPLETED;
             case "cancelled" -> EventStatus.CANCELLED;
             case "draft" -> EventStatus.DRAFT;
-            default -> EventStatus.PUBLISHED;
+            default -> throw new IllegalArgumentException("Invalid status: " + frontendStatus);
         };
     }
 }

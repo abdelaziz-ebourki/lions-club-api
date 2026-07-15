@@ -72,11 +72,13 @@ class EventControllerTest {
         memberUser.setEnabled(true);
         memberUser = userRepository.save(memberUser);
 
+        var start = LocalDateTime.now().plusDays(30);
+        var end = start.plusHours(8);
         var event = new Event();
         event.setTitle("Test Event");
         event.setDescription("A test event description for testing");
-        event.setStartDateTime(LocalDateTime.of(2026, 9, 15, 10, 0));
-        event.setEndDateTime(LocalDateTime.of(2026, 9, 15, 18, 0));
+        event.setStartDateTime(start);
+        event.setEndDateTime(end);
         event.setLocation("Test Location");
         event.setCategory(EventCategory.COMMUNITY);
         event.setStatus(EventStatus.PUBLISHED);
@@ -189,6 +191,27 @@ class EventControllerTest {
                                 }
                                 """))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldReturn400ForInvalidCategory() throws Exception {
+        var cookie = loginAs(adminUser, "adminpass");
+
+        mockMvc.perform(post("/api/events")
+                        .cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "title": "New Event",
+                                    "description": "A brand new event for testing purposes",
+                                    "date": "2026-10-01",
+                                    "time": "14:00",
+                                    "location": "Test Location",
+                                    "category": "INVALID_CATEGORY"
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value("No enum constant com.lionsclub.api.domain.event.EventCategory.INVALID_CATEGORY"));
     }
 
     @Test
