@@ -1,0 +1,320 @@
+package com.lionsclub.api.web;
+
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.lionsclub.api.TestcontainersConfiguration;
+import com.lionsclub.api.domain.event.Event;
+import com.lionsclub.api.domain.event.EventCategory;
+import com.lionsclub.api.domain.event.EventStatus;
+import com.lionsclub.api.domain.user.Role;
+import com.lionsclub.api.domain.user.User;
+import com.lionsclub.api.infrastructure.persistence.EventRepository;
+import com.lionsclub.api.infrastructure.persistence.UserRepository;
+import jakarta.servlet.http.Cookie;
+import java.time.LocalDateTime;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.context.ImportTestcontainers;
+import org.springframework.http.MediaType;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.jdbc.Sql;
+import org.springframework.test.web.servlet.MockMvc;
+
+@SpringBootTest
+@AutoConfigureMockMvc
+@ActiveProfiles("dev")
+@Sql(statements = {"DELETE FROM events", "DELETE FROM users"}, executionPhase = Sql.ExecutionPhase.BEFORE_TEST_METHOD)
+@ImportTestcontainers(TestcontainersConfiguration.class)
+class EventControllerTest {
+
+    @Autowired
+    private MockMvc mockMvc;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private EventRepository eventRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    private User adminUser;
+    private User memberUser;
+    private Event existingEvent;
+
+    @BeforeEach
+    void setUp() {
+        adminUser = new User();
+        adminUser.setEmail("admin@test.com");
+        adminUser.setPasswordHash(passwordEncoder.encode("adminpass"));
+        adminUser.setFirstName("Admin");
+        adminUser.setLastName("User");
+        adminUser.setRole(Role.ADMIN);
+        adminUser.setEnabled(true);
+        adminUser = userRepository.save(adminUser);
+
+        memberUser = new User();
+        memberUser.setEmail("member@test.com");
+        memberUser.setPasswordHash(passwordEncoder.encode("memberpass"));
+        memberUser.setFirstName("Member");
+        memberUser.setLastName("User");
+        memberUser.setRole(Role.MEMBER);
+        memberUser.setEnabled(true);
+        memberUser = userRepository.save(memberUser);
+
+        var event = new Event();
+        event.setTitle("Test Event");
+        event.setDescription("A test event description for testing");
+        event.setStartDateTime(LocalDateTime.of(2026, 9, 15, 10, 0));
+        event.setEndDateTime(LocalDateTime.of(2026, 9, 15, 18, 0));
+        event.setLocation("Test Location");
+        event.setCategory(EventCategory.COMMUNITY);
+        event.setStatus(EventStatus.PUBLISHED);
+        event.setCreatedBy(adminUser);
+        existingEvent = eventRepository.save(event);
+    }
+
+    private Cookie loginAs(User user, String password) throws Exception {
+        var result = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email": "%s", "password": "%s"}
+                                """.formatted(user.getEmail(), password)))
+                .andExpect(status().isOk())
+                .andReturn();
+        return result.getResponse().getCookie("auth_token");
+    }
+
+    @Test
+    void shouldListAllEvents() throws Exception {
+        mockMvc.perform(get("/api/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").isString())
+                .andExpect(jsonPath("$[0].title").value("Test Event"))
+                .andExpect(jsonPath("$[0].rsvpCount").value(0));
+    }
+
+    @Test
+    void shouldFilterEventsByStatus() throws Exception {
+        mockMvc.perform(get("/api/events?status=upcoming"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].status").value("upcoming"));
+    }
+
+    @Test
+    void shouldReturn400ForInvalidStatusFilter() throws Exception {
+        mockMvc.perform(get("/api/events?status=invalid"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldGetSingleEvent() throws Exception {
+        mockMvc.perform(get("/api/events/{id}", existingEvent.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").isString())
+                .andExpect(jsonPath("$.title").value("Test Event"));
+    }
+
+    @Test
+    void shouldReturn404ForNonExistentEvent() throws Exception {
+        mockMvc.perform(get("/api/events/{id}", "00000000-0000-0000-0000-000000000000"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldCreateEventAsAdmin() throws Exception {
+        var cookie = loginAs(adminUser, "adminpass");
+
+        mockMvc.perform(post("/api/events")
+                        .cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "title": "New Event",
+                                    "description": "A brand new event for testing purposes",
+                                    "date": "2026-10-01",
+                                    "time": "14:00",
+                                    "location": "New Location",
+                                    "category": "Health"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isString())
+                .andExpect(jsonPath("$.title").value("New Event"))
+                .andExpect(jsonPath("$.status").value("upcoming"));
+    }
+
+    @Test
+    void shouldReturn401ForUnauthenticatedCreate() throws Exception {
+        mockMvc.perform(post("/api/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "title": "New Event",
+                                    "description": "A brand new event for testing purposes",
+                                    "date": "2026-10-01",
+                                    "time": "14:00",
+                                    "location": "New Location",
+                                    "category": "Health"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldReturn403ForNonAdminCreate() throws Exception {
+        var cookie = loginAs(memberUser, "memberpass");
+
+        mockMvc.perform(post("/api/events")
+                        .cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "title": "New Event",
+                                    "description": "A brand new event for testing purposes",
+                                    "date": "2026-10-01",
+                                    "time": "14:00",
+                                    "location": "New Location",
+                                    "category": "Health"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldReturn400ForInvalidCreateInput() throws Exception {
+        var cookie = loginAs(adminUser, "adminpass");
+
+        mockMvc.perform(post("/api/events")
+                        .cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "title": "AB",
+                                    "description": "short",
+                                    "date": "",
+                                    "time": "",
+                                    "location": "",
+                                    "category": ""
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldUpdateEventAsAdmin() throws Exception {
+        var cookie = loginAs(adminUser, "adminpass");
+
+        mockMvc.perform(put("/api/events/{id}", existingEvent.getId())
+                        .cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "title": "Updated Event Title",
+                                    "description": "This event has been updated with new details",
+                                    "date": "2026-11-01",
+                                    "time": "09:00",
+                                    "location": "Updated Location",
+                                    "category": "Environment"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Updated Event Title"))
+                .andExpect(jsonPath("$.category").value("ENVIRONMENT"));
+    }
+
+    @Test
+    void shouldReturn404ForUpdateOfNonExistentEvent() throws Exception {
+        var cookie = loginAs(adminUser, "adminpass");
+
+        mockMvc.perform(put("/api/events/{id}", "00000000-0000-0000-0000-000000000000")
+                        .cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "title": "Updated Event Title",
+                                    "description": "This event has been updated with new details",
+                                    "date": "2026-11-01",
+                                    "time": "09:00",
+                                    "location": "Updated Location",
+                                    "category": "Environment"
+                                }
+                                """))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldReturn401ForUnauthenticatedUpdate() throws Exception {
+        mockMvc.perform(put("/api/events/{id}", existingEvent.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "title": "Updated",
+                                    "description": "This event has been updated with new details",
+                                    "date": "2026-11-01",
+                                    "time": "09:00",
+                                    "location": "Updated Location",
+                                    "category": "Environment"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void shouldReturn403ForNonAdminUpdate() throws Exception {
+        var cookie = loginAs(memberUser, "memberpass");
+
+        mockMvc.perform(put("/api/events/{id}", existingEvent.getId())
+                        .cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "title": "Updated",
+                                    "description": "This event has been updated with new details",
+                                    "date": "2026-11-01",
+                                    "time": "09:00",
+                                    "location": "Updated Location",
+                                    "category": "Environment"
+                                }
+                                """))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldDeleteEventAsAdmin() throws Exception {
+        var cookie = loginAs(adminUser, "adminpass");
+
+        mockMvc.perform(delete("/api/events/{id}", existingEvent.getId())
+                        .cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void shouldReturn404ForDeleteOfNonExistentEvent() throws Exception {
+        var cookie = loginAs(adminUser, "adminpass");
+
+        mockMvc.perform(delete("/api/events/{id}", "00000000-0000-0000-0000-000000000000")
+                        .cookie(cookie))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void shouldReturn403ForNonAdminDelete() throws Exception {
+        var cookie = loginAs(memberUser, "memberpass");
+
+        mockMvc.perform(delete("/api/events/{id}", existingEvent.getId())
+                        .cookie(cookie))
+                .andExpect(status().isForbidden());
+    }
+}
