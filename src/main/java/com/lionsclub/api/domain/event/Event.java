@@ -65,6 +65,10 @@ public class Event {
     @Column(nullable = false)
     private EventStatus status;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private EventCategory category;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "created_by", nullable = false)
     private User createdBy;
