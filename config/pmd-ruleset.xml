@@ -22,11 +22,6 @@
         <exclude name="MissingSerialVersionUID"/>
     </rule>
 
-    <rule ref="category/java/errorprone.xml/AvoidDuplicateLiterals">
-        <properties>
-            <property name="exceptionList" value="200"/>
-        </properties>
-    </rule>
 
     <rule ref="category/java/performance.xml"/>
 
