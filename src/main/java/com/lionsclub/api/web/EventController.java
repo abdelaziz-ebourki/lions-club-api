@@ -42,12 +42,8 @@ public class EventController {
     @ApiResponse(responseCode = "400", description = "Invalid status filter")
     @GetMapping
     public ResponseEntity<?> listEvents(@RequestParam(required = false) String status) {
-        try {
-            var events = eventService.listEvents(status);
-            return ResponseEntity.ok(events);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
-        }
+        var events = eventService.listEvents(status);
+        return ResponseEntity.ok(events);
     }
 
     @Operation(summary = "Get single event",
