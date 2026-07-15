@@ -12,6 +12,7 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,7 @@ public class EventService {
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ISO_LOCAL_DATE;
     private static final DateTimeFormatter TIME_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private static final int DEFAULT_DURATION_HOURS = 2;
+    private static final String STATUS_PAST = "past";
 
     private final EventRepository eventRepository;
 
@@ -34,10 +36,10 @@ public class EventService {
         if (statusFilter == null || statusFilter.isBlank()) {
             events = eventRepository.findAll();
         } else {
-            events = switch (statusFilter.toLowerCase()) {
+            events = switch (statusFilter.toLowerCase(Locale.ROOT)) {
                 case "upcoming" -> eventRepository.findUpcomingEvents(EventStatus.PUBLISHED, now);
                 case "ongoing" -> eventRepository.findOngoingEvents(EventStatus.PUBLISHED, now);
-                case "past" -> eventRepository.findPastEvents(EventStatus.COMPLETED, EventStatus.PUBLISHED, now);
+                case STATUS_PAST -> eventRepository.findPastEvents(EventStatus.COMPLETED, EventStatus.PUBLISHED, now);
                 default -> throw new IllegalArgumentException("Invalid status filter: " + statusFilter);
             };
         }
@@ -64,7 +66,7 @@ public class EventService {
         event.setStartDateTime(startDateTime);
         event.setEndDateTime(endDateTime);
         event.setLocation(request.location());
-        event.setCategory(EventCategory.valueOf(request.category().toUpperCase()));
+        event.setCategory(EventCategory.valueOf(request.category().toUpperCase(Locale.ROOT)));
         event.setStatus(EventStatus.PUBLISHED);
         event.setCreatedBy(creator);
 
@@ -90,7 +92,7 @@ public class EventService {
         existing.setStartDateTime(startDateTime);
         existing.setEndDateTime(endDateTime);
         existing.setLocation(request.location());
-        existing.setCategory(EventCategory.valueOf(request.category().toUpperCase()));
+        existing.setCategory(EventCategory.valueOf(request.category().toUpperCase(Locale.ROOT)));
 
         if (request.status() != null && !request.status().isBlank()) {
             existing.setStatus(mapStatus(request.status()));
@@ -133,21 +135,21 @@ public class EventService {
                 if (event.getStartDateTime().isAfter(now)) {
                     yield "upcoming";
                 } else if (event.getEndDateTime().isBefore(now)) {
-                    yield "past";
+                    yield STATUS_PAST;
                 } else {
                     yield "ongoing";
                 }
             }
-            case COMPLETED -> "past";
+            case COMPLETED -> STATUS_PAST;
             case CANCELLED -> "cancelled";
             case DRAFT -> "draft";
         };
     }
 
     private EventStatus mapStatus(String frontendStatus) {
-        return switch (frontendStatus.toLowerCase()) {
+        return switch (frontendStatus.toLowerCase(Locale.ROOT)) {
             case "upcoming", "ongoing" -> EventStatus.PUBLISHED;
-            case "past" -> EventStatus.COMPLETED;
+            case STATUS_PAST -> EventStatus.COMPLETED;
             case "cancelled" -> EventStatus.CANCELLED;
             case "draft" -> EventStatus.DRAFT;
             default -> EventStatus.PUBLISHED;
