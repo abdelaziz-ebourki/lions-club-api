@@ -19,7 +19,7 @@ public class OpenApiConfig {
         return new OpenAPI()
                 .info(new Info()
                         .title("Lions Club FSBM API")
-                        .version("0.0.1")
+                        .version("0.1.0")
                         .description("REST API for Lions Club FSBM — member management, events, and RSVPs"))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()

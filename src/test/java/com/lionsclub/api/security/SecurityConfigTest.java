@@ -30,7 +30,7 @@ class SecurityConfigTest {
 
     @Test
     void shouldAllowPublicAccessToApiDocs() throws Exception {
-        mockMvc.perform(get("/v3/api-docs"))
+        mockMvc.perform(get("/api-docs"))
                 .andExpect(status().isOk());
     }
 
