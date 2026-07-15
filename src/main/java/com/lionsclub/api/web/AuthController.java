@@ -36,6 +36,10 @@ public class AuthController {
     private final AuthService authService;
     private final JwtConfig jwtConfig;
 
+    @Operation(summary = "Authenticate user",
+            description = "Validates email and password, returns auth_token cookie on success.")
+    @ApiResponse(responseCode = "200", description = "Login successful, auth_token cookie set")
+    @ApiResponse(responseCode = "401", description = "Invalid credentials")
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
         var result = authService.login(request.email(), request.password());
@@ -48,6 +52,10 @@ public class AuthController {
                 .body(Map.of(ERROR_FIELD, result.error()));
     }
 
+    @Operation(summary = "Register a new user",
+            description = "Creates a new user account with email, password, first name, and last name. Returns auth_token cookie on success.")
+    @ApiResponse(responseCode = "201", description = "Registration successful, auth_token cookie set")
+    @ApiResponse(responseCode = "409", description = "Email already registered")
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
         var result = authService.register(
@@ -62,6 +70,9 @@ public class AuthController {
                 .body(Map.of(ERROR_FIELD, result.error()));
     }
 
+    @Operation(summary = "Log out user",
+            description = "Clears the auth_token cookie, ending the user session.")
+    @ApiResponse(responseCode = "200", description = "Logout successful, auth_token cookie cleared")
     @PostMapping("/logout")
     public ResponseEntity<?> logout() {
         return ResponseEntity.ok()

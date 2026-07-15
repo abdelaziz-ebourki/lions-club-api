@@ -212,6 +212,15 @@ class AuthControllerTest {
     }
 
     @Test
+    void authEndpointsShouldHaveOperationSummaries() throws Exception {
+        mockMvc.perform(get("/api-docs"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.paths['/api/auth/login'].post.summary").exists())
+                .andExpect(jsonPath("$.paths['/api/auth/register'].post.summary").exists())
+                .andExpect(jsonPath("$.paths['/api/auth/logout'].post.summary").exists());
+    }
+
+    @Test
     void chain_shouldWorkAfterRefresh() throws Exception {
         var loginResult = mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
