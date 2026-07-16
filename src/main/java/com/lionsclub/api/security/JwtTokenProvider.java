@@ -23,11 +23,14 @@ public class JwtTokenProvider {
         this.verifier = JWT.require(algorithm).build();
     }
 
-    public String generateToken(UUID userId, Role role) {
+    public String createToken(UUID userId, String email, Role role, String firstName, String lastName) {
         var now = Instant.now();
         return JWT.create()
                 .withSubject(userId.toString())
                 .withClaim("role", role.name())
+                .withClaim("email", email)
+                .withClaim("firstName", firstName)
+                .withClaim("lastName", lastName)
                 .withIssuedAt(now)
                 .withExpiresAt(now.plus(jwtConfig.getExpiration()))
                 .sign(algorithm);
@@ -41,4 +44,8 @@ public class JwtTokenProvider {
         }
     }
 
+    // Legacy method for backward compatibility with existing tests
+    public String generateToken(UUID userId, Role role) {
+        return createToken(userId, "", role, "", "");
+    }
 }

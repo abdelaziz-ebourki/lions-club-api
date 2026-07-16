@@ -6,6 +6,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.lionsclub.api.TestcontainersConfiguration;
 import com.lionsclub.api.domain.event.Event;
@@ -15,8 +17,12 @@ import com.lionsclub.api.domain.user.Role;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.EventRepository;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;
+import com.lionsclub.api.security.WithMockUserPrincipal;
+import com.lionsclub.api.service.EventService;
+import com.lionsclub.api.web.dto.EventRequest;
 import jakarta.servlet.http.Cookie;
 import java.time.LocalDateTime;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +30,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.jdbc.Sql;
@@ -44,6 +51,9 @@ class EventControllerTest {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private EventService eventService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -339,5 +349,45 @@ class EventControllerTest {
         mockMvc.perform(delete("/api/events/{id}", existingEvent.getId())
                         .cookie(cookie))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUserPrincipal(userId = "00000000-0000-0000-0000-000000000002",
+            email = "member@test.com", role = "MEMBER",
+            firstName = "Member", lastName = "User")
+    void shouldAllowUpdateWhenUserIdMatchesPrincipal() {
+        var request = new EventRequest(
+                "Updated Title",
+                "Updated Description",
+                "2026-11-01",
+                "09:00",
+                "New Location",
+                "Health",
+                null
+        );
+        var result = eventService.updateEvent(existingEvent.getId(), request,
+                UUID.fromString("00000000-0000-0000-0000-000000000002"));
+        assertThat(result).isNotNull();
+        assertThat(result.title()).isEqualTo("Updated Title");
+    }
+
+    @Test
+    @WithMockUserPrincipal(userId = "00000000-0000-0000-0000-000000000002",
+            email = "member@test.com", role = "MEMBER",
+            firstName = "Member", lastName = "User")
+    void shouldDenyUpdateWhenUserIdDiffersFromPrincipal() {
+        var request = new EventRequest(
+                "Updated Title",
+                "Updated Description",
+                "2026-11-01",
+                "09:00",
+                "New Location",
+                "Health",
+                null
+        );
+        var differentUserId = UUID.fromString("00000000-0000-0000-0000-000000000099");
+        assertThatThrownBy(() ->
+                eventService.updateEvent(existingEvent.getId(), request, differentUserId))
+                .isInstanceOf(AccessDeniedException.class);
     }
 }

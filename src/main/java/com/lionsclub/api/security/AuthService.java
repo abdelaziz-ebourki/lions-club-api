@@ -36,7 +36,7 @@ public class AuthService {
             return AuthResult.failure("Invalid credentials");
         }
 
-        String token = jwtTokenProvider.generateToken(user.getId(), user.getRole());
+        String token = jwtTokenProvider.createToken(user.getId(), user.getEmail(), user.getRole(), user.getFirstName(), user.getLastName());
         return AuthResult.success(token);
     }
 
@@ -57,7 +57,7 @@ public class AuthService {
         } catch (DataIntegrityViolationException e) {
             return AuthResult.failure(ERROR_DUPLICATE_EMAIL);
         }
-        String token = jwtTokenProvider.generateToken(user.getId(), user.getRole());
+        String token = jwtTokenProvider.createToken(user.getId(), user.getEmail(), user.getRole(), user.getFirstName(), user.getLastName());
         return AuthResult.success(token);
     }
 
@@ -76,7 +76,7 @@ public class AuthService {
     public String refreshToken(UUID userId) {
         return userRepository.findById(userId)
                 .filter(User::isEnabled)
-                .map(user -> jwtTokenProvider.generateToken(user.getId(), user.getRole()))
+                .map(user -> jwtTokenProvider.createToken(user.getId(), user.getEmail(), user.getRole(), user.getFirstName(), user.getLastName()))
                 .orElse(null);
     }
 

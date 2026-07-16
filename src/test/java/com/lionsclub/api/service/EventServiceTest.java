@@ -3,16 +3,21 @@ package com.lionsclub.api.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 import com.lionsclub.api.domain.event.Event;
 import com.lionsclub.api.domain.event.EventCategory;
 import com.lionsclub.api.domain.event.EventStatus;
+import com.lionsclub.api.domain.rsvp.RsvpStatus;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.EventRepository;
+import com.lionsclub.api.infrastructure.persistence.RsvpRepository;
+import com.lionsclub.api.infrastructure.persistence.UserRepository;
 import com.lionsclub.api.web.dto.EventRequest;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,6 +32,12 @@ class EventServiceTest {
     @Mock
     private EventRepository eventRepository;
 
+    @Mock
+    private RsvpRepository rsvpRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
     private EventService eventService;
     private Event upcomingEvent;
     private Event ongoingEvent;
@@ -35,7 +46,7 @@ class EventServiceTest {
 
     @BeforeEach
     void setUp() {
-        eventService = new EventService(eventRepository);
+        eventService = new EventService(eventRepository, rsvpRepository, userRepository);
 
         var now = LocalDateTime.now();
 
@@ -62,16 +73,23 @@ class EventServiceTest {
     void shouldReturnUpcomingStatusForPublishedEventInFuture() {
         when(eventRepository.findUpcomingEvents(eq(EventStatus.PUBLISHED), any(LocalDateTime.class)))
                 .thenReturn(List.of(upcomingEvent));
+        when(rsvpRepository.countByEventIdAndStatus(eq(upcomingEvent.getId()), eq(RsvpStatus.YES))).thenReturn(0L);
+        when(rsvpRepository.countByEventIdAndStatus(eq(upcomingEvent.getId()), eq(RsvpStatus.NO))).thenReturn(0L);
+        when(rsvpRepository.countByEventIdAndStatus(eq(upcomingEvent.getId()), eq(RsvpStatus.MAYBE))).thenReturn(0L);
 
         var results = eventService.listEvents("upcoming");
         assertThat(results).hasSize(1);
         assertThat(results.get(0).status()).isEqualTo("upcoming");
+        assertThat(results.get(0).rsvpCount()).isZero();
     }
 
     @Test
     void shouldReturnOngoingStatusForCurrentlyActiveEvent() {
         when(eventRepository.findOngoingEvents(eq(EventStatus.PUBLISHED), any(LocalDateTime.class)))
                 .thenReturn(List.of(ongoingEvent));
+        when(rsvpRepository.countByEventIdAndStatus(eq(ongoingEvent.getId()), eq(RsvpStatus.YES))).thenReturn(0L);
+        when(rsvpRepository.countByEventIdAndStatus(eq(ongoingEvent.getId()), eq(RsvpStatus.NO))).thenReturn(0L);
+        when(rsvpRepository.countByEventIdAndStatus(eq(ongoingEvent.getId()), eq(RsvpStatus.MAYBE))).thenReturn(0L);
 
         var results = eventService.listEvents("ongoing");
         assertThat(results).hasSize(1);
@@ -82,6 +100,9 @@ class EventServiceTest {
     void shouldReturnPastStatusForPublishedEndedEvent() {
         when(eventRepository.findPastEvents(eq(EventStatus.COMPLETED), eq(EventStatus.PUBLISHED), any(LocalDateTime.class)))
                 .thenReturn(List.of(pastPublishedEvent));
+        when(rsvpRepository.countByEventIdAndStatus(eq(pastPublishedEvent.getId()), eq(RsvpStatus.YES))).thenReturn(0L);
+        when(rsvpRepository.countByEventIdAndStatus(eq(pastPublishedEvent.getId()), eq(RsvpStatus.NO))).thenReturn(0L);
+        when(rsvpRepository.countByEventIdAndStatus(eq(pastPublishedEvent.getId()), eq(RsvpStatus.MAYBE))).thenReturn(0L);
 
         var results = eventService.listEvents("past");
         assertThat(results).hasSize(1);
@@ -92,6 +113,9 @@ class EventServiceTest {
     void shouldReturnPastStatusForCompletedEvent() {
         when(eventRepository.findPastEvents(eq(EventStatus.COMPLETED), eq(EventStatus.PUBLISHED), any(LocalDateTime.class)))
                 .thenReturn(List.of(completedEvent));
+        when(rsvpRepository.countByEventIdAndStatus(eq(completedEvent.getId()), eq(RsvpStatus.YES))).thenReturn(0L);
+        when(rsvpRepository.countByEventIdAndStatus(eq(completedEvent.getId()), eq(RsvpStatus.NO))).thenReturn(0L);
+        when(rsvpRepository.countByEventIdAndStatus(eq(completedEvent.getId()), eq(RsvpStatus.MAYBE))).thenReturn(0L);
 
         var results = eventService.listEvents("past");
         assertThat(results).hasSize(1);
@@ -134,18 +158,26 @@ class EventServiceTest {
         savedEvent.setCreatedAt(LocalDateTime.now());
         savedEvent.setUpdatedAt(LocalDateTime.now());
 
+        when(userRepository.findById(creator.getId())).thenReturn(Optional.of(creator));
         when(eventRepository.save(any())).thenReturn(savedEvent);
+        lenient().when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.YES))).thenReturn(0L);
+        lenient().when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.NO))).thenReturn(0L);
+        lenient().when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.MAYBE))).thenReturn(0L);
 
-        var result = eventService.createEvent(creator, request);
+        var result = eventService.createEvent(creator.getId(), request);
         assertThat(result.title()).isEqualTo("Test Event");
         assertThat(result.category()).isEqualTo("HEALTH");
         assertThat(result.status()).isEqualTo("upcoming");
         assertThat(result.rsvpCount()).isZero();
+        assertThat(result.rsvpBreakdown()).containsExactlyInAnyOrderEntriesOf(Map.of("yes", 0, "no", 0, "maybe", 0));
     }
 
     @Test
     void shouldReturnAllEventsWhenNoStatusFilter() {
         when(eventRepository.findAll()).thenReturn(List.of(upcomingEvent, ongoingEvent, pastPublishedEvent));
+        when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.YES))).thenReturn(0L);
+        when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.NO))).thenReturn(0L);
+        when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.MAYBE))).thenReturn(0L);
 
         var results = eventService.listEvents(null);
         assertThat(results).hasSize(3);
