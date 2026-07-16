@@ -7,11 +7,14 @@ import com.lionsclub.api.domain.rsvp.RsvpStatus;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.EventRepository;
 import com.lionsclub.api.infrastructure.persistence.RsvpRepository;
+import com.lionsclub.api.infrastructure.persistence.UserRepository;
 import com.lionsclub.api.web.dto.RsvpRequest;
 import com.lionsclub.api.web.dto.RsvpResponse;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,9 +24,11 @@ public class RsvpService {
 
     private final RsvpRepository rsvpRepository;
     private final EventRepository eventRepository;
+    private final UserRepository userRepository;
 
     @Transactional
-    public RsvpResponse createOrUpdateRsvp(UUID eventId, User member, RsvpRequest request) {
+    @PreAuthorize("principal.userId == #memberId or principal.role == T(com.lionsclub.api.domain.user.Role).ADMIN")
+    public RsvpResponse createOrUpdateRsvp(UUID eventId, UUID memberId, RsvpRequest request) {
         var event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new IllegalArgumentException("Event not found"));
 
@@ -43,12 +48,14 @@ public class RsvpService {
             }
         }
 
-        var existingRsvp = rsvpRepository.findByEventIdAndMemberId(eventId, member.getId());
+        var existingRsvp = rsvpRepository.findByEventIdAndMemberId(eventId, memberId);
         Rsvp rsvp;
 
         if (existingRsvp.isPresent()) {
             rsvp = existingRsvp.get();
         } else {
+            var member = userRepository.findById(memberId)
+                    .orElseThrow(() -> new IllegalArgumentException("Member not found"));
             rsvp = new Rsvp();
             rsvp.setEvent(event);
             rsvp.setMember(member);
@@ -62,6 +69,7 @@ public class RsvpService {
         return toResponse(saved);
     }
 
+    @PreAuthorize("principal.role == T(com.lionsclub.api.domain.user.Role).ADMIN")
     public List<RsvpResponse> getRsvpsForEvent(UUID eventId) {
         return rsvpRepository.findByEventId(eventId).stream()
                 .map(this::toResponseWithMember)
@@ -74,9 +82,9 @@ public class RsvpService {
 
     private RsvpStatus parseStatus(String status) {
         try {
-            return RsvpStatus.valueOf(status.toUpperCase());
+            return RsvpStatus.valueOf(status.toUpperCase(Locale.ROOT));
         } catch (IllegalArgumentException e) {
-            throw new IllegalArgumentException("Invalid RSVP status. Must be YES, NO, or MAYBE");
+            throw new IllegalArgumentException("Invalid RSVP status. Must be YES, NO, or MAYBE", e);
         }
     }
 

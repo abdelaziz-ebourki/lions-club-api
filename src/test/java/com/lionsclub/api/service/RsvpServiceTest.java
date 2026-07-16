@@ -15,6 +15,7 @@ import com.lionsclub.api.domain.rsvp.RsvpStatus;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.EventRepository;
 import com.lionsclub.api.infrastructure.persistence.RsvpRepository;
+import com.lionsclub.api.infrastructure.persistence.UserRepository;
 import com.lionsclub.api.web.dto.RsvpRequest;
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -34,6 +35,9 @@ class RsvpServiceTest {
     @Mock
     private EventRepository eventRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private RsvpService rsvpService;
     private User member;
     private Event publishedEvent;
@@ -42,7 +46,7 @@ class RsvpServiceTest {
 
     @BeforeEach
     void setUp() {
-        rsvpService = new RsvpService(rsvpRepository, eventRepository);
+        rsvpService = new RsvpService(rsvpRepository, eventRepository, userRepository);
 
         member = new User();
         member.setId(UUID.randomUUID());
@@ -66,6 +70,7 @@ class RsvpServiceTest {
         when(eventRepository.findById(publishedEvent.getId())).thenReturn(Optional.of(publishedEvent));
         when(rsvpRepository.findByEventIdAndMemberId(publishedEvent.getId(), member.getId())).thenReturn(Optional.empty());
         when(rsvpRepository.countByEventIdAndStatus(publishedEvent.getId(), RsvpStatus.YES)).thenReturn(0L);
+        when(userRepository.findById(member.getId())).thenReturn(Optional.of(member));
 
         Rsvp savedRsvp = new Rsvp();
         savedRsvp.setId(UUID.randomUUID());
@@ -77,7 +82,7 @@ class RsvpServiceTest {
         when(rsvpRepository.save(any())).thenReturn(savedRsvp);
 
         RsvpRequest request = new RsvpRequest("YES", 2, "Looking forward!");
-        var result = rsvpService.createOrUpdateRsvp(publishedEvent.getId(), member, request);
+        var result = rsvpService.createOrUpdateRsvp(publishedEvent.getId(), member.getId(), request);
 
         assertThat(result.id()).isNotNull();
         assertThat(result.status()).isEqualTo("YES");
@@ -100,7 +105,7 @@ class RsvpServiceTest {
         when(rsvpRepository.save(any(Rsvp.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         RsvpRequest request = new RsvpRequest("NO", 0, null);
-        var result = rsvpService.createOrUpdateRsvp(publishedEvent.getId(), member, request);
+        var result = rsvpService.createOrUpdateRsvp(publishedEvent.getId(), member.getId(), request);
 
         assertThat(result.status()).isEqualTo("NO");
         assertThat(result.plusOne()).isZero();
@@ -111,7 +116,7 @@ class RsvpServiceTest {
         when(eventRepository.findById(cancelledEvent.getId())).thenReturn(Optional.of(cancelledEvent));
 
         RsvpRequest request = new RsvpRequest("YES", 0, null);
-        assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(cancelledEvent.getId(), member, request))
+        assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(cancelledEvent.getId(), member.getId(), request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("cancelled");
     }
@@ -121,7 +126,7 @@ class RsvpServiceTest {
         when(eventRepository.findById(completedEvent.getId())).thenReturn(Optional.of(completedEvent));
 
         RsvpRequest request = new RsvpRequest("YES", 0, null);
-        assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(completedEvent.getId(), member, request))
+        assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(completedEvent.getId(), member.getId(), request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("completed");
     }
@@ -132,7 +137,7 @@ class RsvpServiceTest {
         when(rsvpRepository.countByEventIdAndStatus(publishedEvent.getId(), RsvpStatus.YES)).thenReturn(10L);
 
         RsvpRequest request = new RsvpRequest("YES", 0, null);
-        assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(publishedEvent.getId(), member, request))
+        assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(publishedEvent.getId(), member.getId(), request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("full");
     }
@@ -143,7 +148,7 @@ class RsvpServiceTest {
         when(eventRepository.findById(fakeId)).thenReturn(Optional.empty());
 
         RsvpRequest request = new RsvpRequest("YES", 0, null);
-        assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(fakeId, member, request))
+        assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(fakeId, member.getId(), request))
                 .isInstanceOf(IllegalArgumentException.class)
                 .hasMessageContaining("not found");
     }
@@ -151,7 +156,7 @@ class RsvpServiceTest {
     @Test
     void shouldThrowExceptionForInvalidStatus() {
         RsvpRequest request = new RsvpRequest("INVALID", 0, null);
-        assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(publishedEvent.getId(), member, request))
+        assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(publishedEvent.getId(), member.getId(), request))
                 .isInstanceOf(IllegalArgumentException.class);
     }
 }

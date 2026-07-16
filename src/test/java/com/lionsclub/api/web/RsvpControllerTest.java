@@ -4,6 +4,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.lionsclub.api.TestcontainersConfiguration;
 import com.lionsclub.api.domain.event.Event;
@@ -16,6 +18,8 @@ import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.EventRepository;
 import com.lionsclub.api.infrastructure.persistence.RsvpRepository;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;
+import com.lionsclub.api.security.WithMockUserPrincipal;
+import com.lionsclub.api.service.RsvpService;
 import jakarta.servlet.http.Cookie;
 import java.time.LocalDateTime;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +29,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.http.MediaType;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
@@ -50,6 +55,9 @@ class RsvpControllerTest {
 
     @Autowired
     private RsvpRepository rsvpRepository;
+
+    @Autowired
+    private RsvpService rsvpService;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -247,5 +255,23 @@ class RsvpControllerTest {
         mockMvc.perform(get("/api/events/{id}/rsvps", testEvent.getId())
                         .cookie(cookie))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUserPrincipal(userId = "00000000-0000-0000-0000-000000000001",
+            email = "admin@test.com", role = "ADMIN",
+            firstName = "Admin", lastName = "User")
+    void shouldAllowAdminToViewRsvpsViaService() {
+        var result = rsvpService.getRsvpsForEvent(testEvent.getId());
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @WithMockUserPrincipal(userId = "00000000-0000-0000-0000-000000000002",
+            email = "member@test.com", role = "MEMBER",
+            firstName = "Member", lastName = "User")
+    void shouldDenyMemberFromViewingRsvpsViaService() {
+        assertThatThrownBy(() -> rsvpService.getRsvpsForEvent(testEvent.getId()))
+                .isInstanceOf(AccessDeniedException.class);
     }
 }

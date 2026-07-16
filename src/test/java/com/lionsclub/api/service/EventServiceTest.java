@@ -10,9 +10,11 @@ import com.lionsclub.api.domain.event.Event;
 import com.lionsclub.api.domain.event.EventCategory;
 import com.lionsclub.api.domain.event.EventStatus;
 import com.lionsclub.api.domain.rsvp.RsvpStatus;
+import com.lionsclub.api.domain.user.Role;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.EventRepository;
 import com.lionsclub.api.infrastructure.persistence.RsvpRepository;
+import com.lionsclub.api.infrastructure.persistence.UserRepository;
 import com.lionsclub.api.web.dto.EventRequest;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -23,7 +25,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
@@ -35,6 +36,9 @@ class EventServiceTest {
     @Mock
     private RsvpRepository rsvpRepository;
 
+    @Mock
+    private UserRepository userRepository;
+
     private EventService eventService;
     private Event upcomingEvent;
     private Event ongoingEvent;
@@ -43,7 +47,7 @@ class EventServiceTest {
 
     @BeforeEach
     void setUp() {
-        eventService = new EventService(eventRepository, rsvpRepository);
+        eventService = new EventService(eventRepository, rsvpRepository, userRepository);
 
         var now = LocalDateTime.now();
 
@@ -122,10 +126,6 @@ class EventServiceTest {
     @Test
     void shouldReturnNullForNonExistentEvent() {
         when(eventRepository.findById(any())).thenReturn(Optional.empty());
-        // Lenient stubs for RsvpRepository as method returns early when event not found
-        lenient().when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.YES))).thenReturn(0L);
-        lenient().when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.NO))).thenReturn(0L);
-        lenient().when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.MAYBE))).thenReturn(0L);
 
         var result = eventService.getEvent(UUID.randomUUID());
         assertThat(result).isNull();
@@ -159,12 +159,13 @@ class EventServiceTest {
         savedEvent.setCreatedAt(LocalDateTime.now());
         savedEvent.setUpdatedAt(LocalDateTime.now());
 
+        when(userRepository.findById(creator.getId())).thenReturn(Optional.of(creator));
         when(eventRepository.save(any())).thenReturn(savedEvent);
-        when(rsvpRepository.countByEventIdAndStatus(eq(savedEvent.getId()), eq(RsvpStatus.YES))).thenReturn(0L);
-        when(rsvpRepository.countByEventIdAndStatus(eq(savedEvent.getId()), eq(RsvpStatus.NO))).thenReturn(0L);
-        when(rsvpRepository.countByEventIdAndStatus(eq(savedEvent.getId()), eq(RsvpStatus.MAYBE))).thenReturn(0L);
+        lenient().when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.YES))).thenReturn(0L);
+        lenient().when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.NO))).thenReturn(0L);
+        lenient().when(rsvpRepository.countByEventIdAndStatus(any(), eq(RsvpStatus.MAYBE))).thenReturn(0L);
 
-        var result = eventService.createEvent(creator, request);
+        var result = eventService.createEvent(creator.getId(), request);
         assertThat(result.title()).isEqualTo("Test Event");
         assertThat(result.category()).isEqualTo("HEALTH");
         assertThat(result.status()).isEqualTo("upcoming");
@@ -187,7 +188,7 @@ class EventServiceTest {
     void shouldReturnFalseForDeleteOfNonExistentEvent() {
         when(eventRepository.existsById(any())).thenReturn(false);
 
-        var result = eventService.deleteEvent(UUID.randomUUID());
+        var result = eventService.deleteEvent(UUID.randomUUID(), UUID.randomUUID(), Role.ADMIN);
         assertThat(result).isFalse();
     }
 }

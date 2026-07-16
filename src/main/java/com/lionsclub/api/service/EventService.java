@@ -7,6 +7,7 @@ import com.lionsclub.api.domain.rsvp.RsvpStatus;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.EventRepository;
 import com.lionsclub.api.infrastructure.persistence.RsvpRepository;
+import com.lionsclub.api.infrastructure.persistence.UserRepository;
 import com.lionsclub.api.web.dto.EventRequest;
 import com.lionsclub.api.web.dto.EventResponse;
 import java.time.LocalDate;
@@ -18,6 +19,7 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,6 +34,7 @@ public class EventService {
 
     private final EventRepository eventRepository;
     private final RsvpRepository rsvpRepository;
+    private final UserRepository userRepository;
 
     public List<EventResponse> listEvents(String statusFilter) {
         var now = LocalDateTime.now();
@@ -58,7 +61,10 @@ public class EventService {
     }
 
     @Transactional
-    public EventResponse createEvent(User creator, EventRequest request) {
+    public EventResponse createEvent(UUID createdByUserId, EventRequest request) {
+        var creator = userRepository.findById(createdByUserId).orElseThrow(
+                () -> new IllegalArgumentException("User not found: " + createdByUserId));
+
         var startDate = LocalDate.parse(request.date(), DATE_FORMAT);
         var startTime = LocalTime.parse(request.time(), TIME_FORMAT);
         var startDateTime = LocalDateTime.of(startDate, startTime);
@@ -79,7 +85,9 @@ public class EventService {
     }
 
     @Transactional
-    public EventResponse updateEvent(UUID id, EventRequest request) {
+    @PreAuthorize("principal.userId == #userId or principal.role == T(com.lionsclub.api.domain.user.Role).ADMIN")
+    public EventResponse updateEvent(UUID id, EventRequest request, UUID userId,
+                                     com.lionsclub.api.domain.user.Role role) {
         var event = eventRepository.findById(id);
         if (event.isEmpty()) {
             return null;
@@ -107,7 +115,9 @@ public class EventService {
     }
 
     @Transactional
-    public boolean deleteEvent(UUID id) {
+    @PreAuthorize("principal.role == T(com.lionsclub.api.domain.user.Role).ADMIN")
+    public boolean deleteEvent(UUID id, UUID userId,
+                               com.lionsclub.api.domain.user.Role role) {
         if (!eventRepository.existsById(id)) {
             return false;
         }
@@ -118,7 +128,7 @@ public class EventService {
     private EventResponse toResponse(Event event) {
         var startDateTime = event.getStartDateTime();
         var rsvpCounts = getRsvpCounts(event.getId());
-        var rsvpCount = rsvpCounts.values().stream().mapToInt(Long::intValue).sum();
+        var rsvpCount = (int) rsvpCounts.values().stream().mapToLong(Long::longValue).sum();
         var rsvpBreakdown = Map.of(
                 "yes", rsvpCounts.getOrDefault(RsvpStatus.YES, 0L).intValue(),
                 "no", rsvpCounts.getOrDefault(RsvpStatus.NO, 0L).intValue(),
