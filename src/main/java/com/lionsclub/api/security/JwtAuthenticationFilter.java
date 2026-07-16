@@ -36,10 +36,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 var decoded = jwtTokenProvider.validateToken(token);
                 String userId = decoded.getSubject();
                 String role = decoded.getClaim("role").asString();
+                String email = decoded.getClaim("email").asString();
+                String firstName = decoded.getClaim("firstName").asString();
+                String lastName = decoded.getClaim("lastName").asString();
 
                 var authorities = List.of(new SimpleGrantedAuthority("ROLE_" + role));
+                var principal = new UserPrincipal(
+                        java.util.UUID.fromString(userId),
+                        email,
+                        com.lionsclub.api.domain.user.Role.valueOf(role),
+                        firstName,
+                        lastName
+                );
                 var authentication = new UsernamePasswordAuthenticationToken(
-                        userId, null, authorities);
+                        principal, null, authorities);
                 SecurityContextHolder.getContext().setAuthentication(authentication);
             } catch (RuntimeException e) {
                 log.warn("JWT validation failed: {}", e.getMessage());

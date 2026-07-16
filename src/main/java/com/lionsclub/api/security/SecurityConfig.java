@@ -30,6 +30,8 @@ public class SecurityConfig {
 
     private static final String ADMIN = "ADMIN";
     private static final String EVENTS_PATH = "/api/events/**";
+    private static final String RSVP_POST_PATH = "/api/events/*/rsvp";
+    private static final String RSVP_GET_PATH = "/api/events/*/rsvps";
     private static final String MEMBERS_PATH = "/api/members/**";
     private static final String FORUM_REPLIES_PATH = "/api/forum/replies/**";
     private static final String FORUM_THREADS_PATH = "/api/forum/threads/**";
@@ -51,6 +53,8 @@ public class SecurityConfig {
                         .requestMatchers("/swagger-ui/**", "/api-docs/**").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         .requestMatchers("/error").permitAll()
+                        .requestMatchers(HttpMethod.POST, RSVP_POST_PATH).hasAnyRole(ADMIN, "MEMBER")
+                        .requestMatchers(HttpMethod.GET, RSVP_GET_PATH).hasRole(ADMIN)
                         .requestMatchers(HttpMethod.GET, EVENTS_PATH).permitAll()
                         .requestMatchers(HttpMethod.POST, EVENTS_PATH).hasRole(ADMIN)
                         .requestMatchers(HttpMethod.PUT, EVENTS_PATH).hasRole(ADMIN)

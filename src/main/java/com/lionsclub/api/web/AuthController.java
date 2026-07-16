@@ -2,6 +2,7 @@ package com.lionsclub.api.web;
 
 import com.lionsclub.api.security.AuthService;
 import com.lionsclub.api.security.JwtConfig;
+import com.lionsclub.api.security.UserPrincipal;
 import com.lionsclub.api.web.dto.AuthResponse;
 import com.lionsclub.api.web.dto.LoginRequest;
 import com.lionsclub.api.web.dto.RegisterRequest;
@@ -13,12 +14,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import jakarta.validation.Valid;
 import java.time.Duration;
 import java.util.Map;
-import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -89,13 +89,11 @@ public class AuthController {
             content = @Content(schema = @Schema(implementation = UserResponse.class)))
     @ApiResponse(responseCode = "401", description = "Not authenticated or invalid token")
     @GetMapping("/me")
-    public ResponseEntity<?> getCurrentUser() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof String)) {
+    public ResponseEntity<?> getCurrentUser(@AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
             return ResponseEntity.status(401).body(Map.of(ERROR_FIELD, ERROR_UNAUTHORIZED));
         }
-        var userId = UUID.fromString((String) auth.getPrincipal());
-        var response = authService.getCurrentUser(userId);
+        var response = authService.getCurrentUser(principal.userId());
         if (response == null) {
             return ResponseEntity.status(401).body(Map.of(ERROR_FIELD, ERROR_UNAUTHORIZED));
         }
@@ -107,13 +105,11 @@ public class AuthController {
     @ApiResponse(responseCode = OK, description = "Token refreshed, new cookie set")
     @ApiResponse(responseCode = "401", description = "Not authenticated or invalid token")
     @PostMapping("/refresh")
-    public ResponseEntity<?> refresh() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof String)) {
+    public ResponseEntity<?> refresh(@AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
             return ResponseEntity.status(401).body(Map.of(ERROR_FIELD, ERROR_UNAUTHORIZED));
         }
-        var userId = UUID.fromString((String) auth.getPrincipal());
-        var token = authService.refreshToken(userId);
+        var token = authService.refreshToken(principal.userId());
         if (token == null) {
             return ResponseEntity.status(401).body(Map.of(ERROR_FIELD, ERROR_UNAUTHORIZED));
         }

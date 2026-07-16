@@ -1,7 +1,6 @@
 package com.lionsclub.api.web;
 
-import com.lionsclub.api.domain.user.User;
-import com.lionsclub.api.infrastructure.persistence.UserRepository;
+import com.lionsclub.api.security.UserPrincipal;
 import com.lionsclub.api.service.EventService;
 import com.lionsclub.api.web.dto.EventRequest;
 import com.lionsclub.api.web.dto.EventResponse;
@@ -14,7 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -33,7 +32,6 @@ public class EventController {
     private static final String OK = "200";
 
     private final EventService eventService;
-    private final UserRepository userRepository;
 
     @Operation(summary = "List all events",
             description = "Public endpoint. Optionally filter by status (upcoming, ongoing, past).")
@@ -68,12 +66,12 @@ public class EventController {
     @ApiResponse(responseCode = "401", description = "Not authenticated")
     @ApiResponse(responseCode = "403", description = "Forbidden - admin only")
     @PostMapping
-    public ResponseEntity<?> createEvent(@Valid @RequestBody EventRequest request) {
-        var creator = getCurrentUser();
-        if (creator == null) {
+    public ResponseEntity<?> createEvent(@Valid @RequestBody EventRequest request,
+                                         @AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
             return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
-        var event = eventService.createEvent(creator, request);
+        var event = eventService.createEvent(principal.userId(), request);
         return ResponseEntity.status(201).body(event);
     }
 
@@ -86,8 +84,12 @@ public class EventController {
     @ApiResponse(responseCode = "403", description = "Forbidden - admin only")
     @ApiResponse(responseCode = "404", description = "Event not found")
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateEvent(@PathVariable UUID id, @Valid @RequestBody EventRequest request) {
-        var event = eventService.updateEvent(id, request);
+    public ResponseEntity<?> updateEvent(@PathVariable UUID id, @Valid @RequestBody EventRequest request,
+                                         @AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+        }
+        var event = eventService.updateEvent(id, request, principal.userId());
         if (event == null) {
             return ResponseEntity.notFound().build();
         }
@@ -101,19 +103,15 @@ public class EventController {
     @ApiResponse(responseCode = "403", description = "Forbidden - admin only")
     @ApiResponse(responseCode = "404", description = "Event not found")
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteEvent(@PathVariable UUID id) {
+    public ResponseEntity<?> deleteEvent(@PathVariable UUID id,
+                                         @AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+        }
         var deleted = eventService.deleteEvent(id);
         if (!deleted) {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(Map.of("success", true));
-    }
-
-    private User getCurrentUser() {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || !(auth.getPrincipal() instanceof String userId)) {
-            return null;
-        }
-        return userRepository.findById(UUID.fromString(userId)).orElse(null);
     }
 }
