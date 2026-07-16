@@ -366,7 +366,7 @@ class EventControllerTest {
                 null
         );
         var result = eventService.updateEvent(existingEvent.getId(), request,
-                UUID.fromString("00000000-0000-0000-0000-000000000002"), Role.MEMBER);
+                UUID.fromString("00000000-0000-0000-0000-000000000002"));
         assertThat(result).isNotNull();
         assertThat(result.title()).isEqualTo("Updated Title");
     }
@@ -387,7 +387,7 @@ class EventControllerTest {
         );
         var differentUserId = UUID.fromString("00000000-0000-0000-0000-000000000099");
         assertThatThrownBy(() ->
-                eventService.updateEvent(existingEvent.getId(), request, differentUserId, Role.MEMBER))
+                eventService.updateEvent(existingEvent.getId(), request, differentUserId))
                 .isInstanceOf(AccessDeniedException.class);
     }
 }

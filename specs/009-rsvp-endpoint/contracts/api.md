@@ -26,7 +26,7 @@ Authenticated (MEMBER or ADMIN). Create or update the authenticated member's RSV
 | plusOne | Optional. Integer >= 0. Default 0. |
 | notes | Optional. Free text. Max 500 characters. |
 
-**Response 201** (created — first RSVP):
+**Response 201** (created or updated — upsert always returns 201):
 ```json
 {
   "id": "uuid-string",
@@ -39,9 +39,6 @@ Authenticated (MEMBER or ADMIN). Create or update the authenticated member's RSV
   "updatedAt": "2026-07-15T19:00:00Z"
 }
 ```
-
-**Response 200** (updated — existing RSVP changed):
-Same body shape as 201.
 
 **Error 400**: Event is CANCELLED or COMPLETED.
 ```json

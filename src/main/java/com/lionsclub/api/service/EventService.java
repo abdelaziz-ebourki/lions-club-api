@@ -86,8 +86,7 @@ public class EventService {
 
     @Transactional
     @PreAuthorize("principal.userId == #userId or principal.role == T(com.lionsclub.api.domain.user.Role).ADMIN")
-    public EventResponse updateEvent(UUID id, EventRequest request, UUID userId,
-                                     com.lionsclub.api.domain.user.Role role) {
+    public EventResponse updateEvent(UUID id, EventRequest request, UUID userId) {
         var event = eventRepository.findById(id);
         if (event.isEmpty()) {
             return null;
@@ -116,8 +115,7 @@ public class EventService {
 
     @Transactional
     @PreAuthorize("principal.role == T(com.lionsclub.api.domain.user.Role).ADMIN")
-    public boolean deleteEvent(UUID id, UUID userId,
-                               com.lionsclub.api.domain.user.Role role) {
+    public boolean deleteEvent(UUID id) {
         if (!eventRepository.existsById(id)) {
             return false;
         }

@@ -41,14 +41,17 @@ public class RsvpService {
 
         var rsvpStatus = parseStatus(request.status());
 
+        var existingRsvp = rsvpRepository.findByEventIdAndMemberId(eventId, memberId);
+
         if (rsvpStatus == RsvpStatus.YES && event.getMaxAttendees() != null) {
-            long currentYesCount = rsvpRepository.countByEventIdAndStatus(eventId, RsvpStatus.YES);
-            if (currentYesCount >= event.getMaxAttendees()) {
-                throw new IllegalStateException("Event is at full capacity");
+            boolean isAlreadyYes = existingRsvp.isPresent() && existingRsvp.get().getStatus() == RsvpStatus.YES;
+            if (!isAlreadyYes) {
+                long currentYesCount = rsvpRepository.countByEventIdAndStatus(eventId, RsvpStatus.YES);
+                if (currentYesCount >= event.getMaxAttendees()) {
+                    throw new IllegalStateException("Event is at full capacity");
+                }
             }
         }
-
-        var existingRsvp = rsvpRepository.findByEventIdAndMemberId(eventId, memberId);
         Rsvp rsvp;
 
         if (existingRsvp.isPresent()) {

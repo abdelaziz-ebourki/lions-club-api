@@ -10,7 +10,6 @@ import com.lionsclub.api.domain.event.Event;
 import com.lionsclub.api.domain.event.EventCategory;
 import com.lionsclub.api.domain.event.EventStatus;
 import com.lionsclub.api.domain.rsvp.RsvpStatus;
-import com.lionsclub.api.domain.user.Role;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.EventRepository;
 import com.lionsclub.api.infrastructure.persistence.RsvpRepository;
@@ -188,7 +187,7 @@ class EventServiceTest {
     void shouldReturnFalseForDeleteOfNonExistentEvent() {
         when(eventRepository.existsById(any())).thenReturn(false);
 
-        var result = eventService.deleteEvent(UUID.randomUUID(), UUID.randomUUID(), Role.ADMIN);
+        var result = eventService.deleteEvent(UUID.randomUUID());
         assertThat(result).isFalse();
     }
 }

@@ -134,12 +134,35 @@ class RsvpServiceTest {
     @Test
     void shouldRejectRsvpWhenEventAtCapacity() {
         when(eventRepository.findById(publishedEvent.getId())).thenReturn(Optional.of(publishedEvent));
+        when(rsvpRepository.findByEventIdAndMemberId(publishedEvent.getId(), member.getId())).thenReturn(Optional.empty());
         when(rsvpRepository.countByEventIdAndStatus(publishedEvent.getId(), RsvpStatus.YES)).thenReturn(10L);
 
         RsvpRequest request = new RsvpRequest("YES", 0, null);
         assertThatThrownBy(() -> rsvpService.createOrUpdateRsvp(publishedEvent.getId(), member.getId(), request))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("full");
+    }
+
+    @Test
+    void shouldAllowUpdateWhenAlreadyYesAtCapacity() {
+        when(eventRepository.findById(publishedEvent.getId())).thenReturn(Optional.of(publishedEvent));
+
+        RsvpStatus originalStatus = RsvpStatus.YES;
+        Rsvp existing = new Rsvp();
+        existing.setId(UUID.randomUUID());
+        existing.setEvent(publishedEvent);
+        existing.setMember(member);
+        existing.setStatus(originalStatus);
+        when(rsvpRepository.findByEventIdAndMemberId(publishedEvent.getId(), member.getId())).thenReturn(Optional.of(existing));
+
+        when(rsvpRepository.save(any(Rsvp.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RsvpRequest request = new RsvpRequest("YES", 1, "Bringing a guest");
+        var result = rsvpService.createOrUpdateRsvp(publishedEvent.getId(), member.getId(), request);
+
+        assertThat(result.status()).isEqualTo("YES");
+        assertThat(result.plusOne()).isEqualTo(1);
+        assertThat(result.notes()).isEqualTo("Bringing a guest");
     }
 
     @Test

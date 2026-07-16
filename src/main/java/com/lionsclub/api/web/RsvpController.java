@@ -30,9 +30,7 @@ public class RsvpController {
 
     @Operation(summary = "RSVP to an event",
             description = "Authenticated members can RSVP (YES/NO/MAYBE) with optional plusOne and notes. Upsert — updates existing RSVP if one exists.")
-    @ApiResponse(responseCode = "201", description = "RSVP created",
-            content = @Content(schema = @Schema(implementation = RsvpResponse.class)))
-    @ApiResponse(responseCode = "200", description = "RSVP updated",
+    @ApiResponse(responseCode = "201", description = "RSVP created or updated (upsert)",
             content = @Content(schema = @Schema(implementation = RsvpResponse.class)))
     @ApiResponse(responseCode = "400", description = "Invalid input or event status")
     @ApiResponse(responseCode = "401", description = "Not authenticated")

@@ -89,7 +89,7 @@ public class EventController {
         if (principal == null) {
             return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
-        var event = eventService.updateEvent(id, request, principal.userId(), principal.role());
+        var event = eventService.updateEvent(id, request, principal.userId());
         if (event == null) {
             return ResponseEntity.notFound().build();
         }
@@ -108,7 +108,7 @@ public class EventController {
         if (principal == null) {
             return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
-        var deleted = eventService.deleteEvent(id, principal.userId(), principal.role());
+        var deleted = eventService.deleteEvent(id);
         if (!deleted) {
             return ResponseEntity.notFound().build();
         }
