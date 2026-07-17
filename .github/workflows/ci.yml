@@ -45,7 +45,7 @@ jobs:
         run: chmod +x ./mvnw
 
       - name: Run PMD check
-        run: ./mvnw pmd:check
+        run: ./mvnw pmd:check || (cat target/pmd.xml && exit 1)
 
       - name: Build and test
         id: build-and-test
