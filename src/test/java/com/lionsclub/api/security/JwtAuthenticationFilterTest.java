@@ -5,8 +5,6 @@ import static org.mockito.Mockito.verify;
 
 import com.lionsclub.api.domain.user.Role;
 import jakarta.servlet.FilterChain;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
