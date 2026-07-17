@@ -96,7 +96,7 @@ As a developer, I want code quality violations to be caught early in the CI pipe
 
 ### Functional Requirements
 
-- **FR-001**: CI workflow MUST automatically cancel in-progress runs when a new push is made to the same branch (non-default branches only).
+- **FR-001**: CI workflow MUST automatically cancel in-progress runs when a new push or PR sync is made to the same branch.
 - **FR-002**: CI workflow MUST upload test report artifacts when tests fail, containing failure details, error messages, and stack traces.
 - **FR-003**: CI workflow MUST support manual triggering via the CI platform UI on any branch without requiring a code push.
 - **FR-004**: CI workflow MUST scan dependencies for known security vulnerabilities and report findings in the CI output.
