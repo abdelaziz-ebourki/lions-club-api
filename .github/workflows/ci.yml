@@ -5,6 +5,11 @@ on:
     branches: [main]
   pull_request:
     branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -39,6 +44,9 @@ jobs:
       - name: Make mvnw executable
         run: chmod +x ./mvnw
 
+      - name: Run PMD check
+        run: ./mvnw pmd:check -q
+
       - name: Build and test
         run: ./mvnw verify -q
         env:
@@ -47,3 +55,24 @@ jobs:
           SPRING_DATASOURCE_PASSWORD: lions_club_dev
           SPRING_JPA_HIBERNATE_DDL_AUTO: validate
           APP_JWT_SECRET: ci-test-secret-that-is-at-least-256-bits-long-for-hs256
+
+      - name: Upload test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+
+  dependency-review:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Dependency Review
+        uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: never
