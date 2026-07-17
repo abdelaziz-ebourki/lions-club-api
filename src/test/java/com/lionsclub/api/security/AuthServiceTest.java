@@ -7,7 +7,6 @@ import static org.mockito.Mockito.when;
 import com.lionsclub.api.domain.user.Role;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;
-import com.lionsclub.api.web.dto.UserResponse;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;

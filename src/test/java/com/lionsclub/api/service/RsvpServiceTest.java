@@ -3,9 +3,6 @@ package com.lionsclub.api.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.lionsclub.api.domain.event.Event;
@@ -17,7 +14,6 @@ import com.lionsclub.api.infrastructure.persistence.EventRepository;
 import com.lionsclub.api.infrastructure.persistence.RsvpRepository;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;
 import com.lionsclub.api.web.dto.RsvpRequest;
-import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;

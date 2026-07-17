@@ -1,10 +1,8 @@
 package com.lionsclub.api.service;
 
-import com.lionsclub.api.domain.event.Event;
 import com.lionsclub.api.domain.event.EventStatus;
 import com.lionsclub.api.domain.rsvp.Rsvp;
 import com.lionsclub.api.domain.rsvp.RsvpStatus;
-import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.EventRepository;
 import com.lionsclub.api.infrastructure.persistence.RsvpRepository;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;

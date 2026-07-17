@@ -3,7 +3,6 @@ package com.lionsclub.api.config;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.lionsclub.api.TestcontainersConfiguration;
-import com.lionsclub.api.domain.event.Event;
 import com.lionsclub.api.domain.event.EventCategory;
 import com.lionsclub.api.domain.event.EventStatus;
 import com.lionsclub.api.domain.user.Role;
