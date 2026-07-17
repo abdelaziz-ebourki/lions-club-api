@@ -103,6 +103,7 @@ public class RsvpService {
         );
     }
 
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
     private RsvpResponse toResponseWithMember(Rsvp rsvp) {
         return new RsvpResponse(
                 rsvp.getId(),

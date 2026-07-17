@@ -7,17 +7,12 @@
     <description>PMD rules for Lions Club FSBM REST API</description>
 
     <rule ref="category/java/bestpractices.xml">
-        <exclude name="JUnitAssertionsShouldIncludeMessage"/>
-        <exclude name="JUnitTestContainsTooManyAsserts"/>
-        <exclude name="JUnit5TestContainsTooManyAsserts"/>
         <exclude name="GuardLogStatement"/>
         <exclude name="AvoidPrintStackTrace"/>
     </rule>
 
     <rule ref="category/java/errorprone.xml">
         <exclude name="AvoidDuplicateLiterals"/>
-        <exclude name="BeanMembersShouldSerialize"/>
-        <exclude name="DataflowAnomalyAnalysis"/>
         <exclude name="NullAssignment"/>
         <exclude name="MissingSerialVersionUID"/>
     </rule>
