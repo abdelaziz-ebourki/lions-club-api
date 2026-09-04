@@ -13,6 +13,7 @@ public record EventResponse(
         String location,
         String category,
         String status,
+        String image,
         int rsvpCount,
         Map<String, Integer> rsvpBreakdown,
         LocalDateTime createdAt,

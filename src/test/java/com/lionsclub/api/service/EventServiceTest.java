@@ -38,6 +38,12 @@ class EventServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private FileStorageService fileStorageService;
+
+    @Mock
+    private NotificationService notificationService;
+
     private EventService eventService;
     private Event upcomingEvent;
     private Event ongoingEvent;
@@ -46,7 +52,7 @@ class EventServiceTest {
 
     @BeforeEach
     void setUp() {
-        eventService = new EventService(eventRepository, rsvpRepository, userRepository);
+        eventService = new EventService(eventRepository, rsvpRepository, userRepository, fileStorageService, notificationService);
 
         var now = LocalDateTime.now();
 

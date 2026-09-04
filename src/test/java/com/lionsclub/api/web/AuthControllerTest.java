@@ -82,7 +82,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email": "newuser@test.com", "password": "password123", "firstName": "New", "lastName": "User"}
+                                {"email": "newuser@test.com", "password": "password123", "name": "New User"}
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(cookie().exists("auth_token"))
@@ -95,7 +95,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email": "existing@test.com", "password": "password123", "firstName": "Dup", "lastName": "User"}
+                                {"email": "existing@test.com", "password": "password123", "name": "Dup User"}
                                 """))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.error").value("Email is already registered"));
@@ -126,7 +126,7 @@ class AuthControllerTest {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email": "", "password": "", "firstName": "", "lastName": ""}
+                                {"email": "", "password": "", "name": ""}
                                 """))
                 .andExpect(status().isBadRequest());
     }
@@ -157,9 +157,9 @@ class AuthControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").isString())
                 .andExpect(jsonPath("$.email").value("existing@test.com"))
-                .andExpect(jsonPath("$.firstName").value("Existing"))
-                .andExpect(jsonPath("$.lastName").value("User"))
-                .andExpect(jsonPath("$.role").value("MEMBER"));
+                .andExpect(jsonPath("$.name").value("Existing User"))
+                .andExpect(jsonPath("$.role").value("member"))
+                .andExpect(jsonPath("$.emailVerified").value(false));
     }
 
     @Test
@@ -241,8 +241,7 @@ class AuthControllerTest {
         mockMvc.perform(get("/api/auth/me").cookie(newCookie))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.email").value("existing@test.com"))
-                .andExpect(jsonPath("$.firstName").value("Existing"))
-                .andExpect(jsonPath("$.lastName").value("User"))
-                .andExpect(jsonPath("$.role").value("MEMBER"));
+                .andExpect(jsonPath("$.name").value("Existing User"))
+                .andExpect(jsonPath("$.role").value("member"));
     }
 }

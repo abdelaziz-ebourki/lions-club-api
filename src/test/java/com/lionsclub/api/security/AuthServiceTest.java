@@ -69,10 +69,24 @@ class AuthServiceTest {
         when(userRepository.findByEmail("dup@test.com")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenThrow(DataIntegrityViolationException.class);
 
-        var result = authService.register("dup@test.com", "password123", "Dup", "User");
+        var result = authService.register("dup@test.com", "password123", "Dup User");
 
         assertThat(result.success()).isFalse();
         assertThat(result.error()).isEqualTo(AuthService.ERROR_DUPLICATE_EMAIL);
+    }
+
+    @Test
+    void register_withDisplayName_shouldSplitFirstAndLastName() {
+        when(userRepository.findByEmail("split@test.com")).thenReturn(Optional.empty());
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User saved = invocation.getArgument(0);
+            saved.setId(UUID.randomUUID());
+            return saved;
+        });
+
+        var result = authService.register("split@test.com", "password123", "John Paul Jones");
+
+        assertThat(result.success()).isTrue();
     }
 
     @Test
@@ -93,9 +107,8 @@ class AuthServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.id()).isEqualTo(userId);
         assertThat(response.email()).isEqualTo("test@test.com");
-        assertThat(response.firstName()).isEqualTo("Test");
-        assertThat(response.lastName()).isEqualTo("User");
-        assertThat(response.role()).isEqualTo("MEMBER");
+        assertThat(response.name()).isEqualTo("Test User");
+        assertThat(response.role()).isEqualTo("member");
     }
 
     @Test

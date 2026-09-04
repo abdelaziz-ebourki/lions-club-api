@@ -2,6 +2,7 @@ package com.lionsclub.api.web;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -221,7 +222,7 @@ class EventControllerTest {
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message").value("No enum constant com.lionsclub.api.domain.event.EventCategory.INVALID_CATEGORY"));
+                .andExpect(jsonPath("$.message").value("Invalid category: INVALID_CATEGORY"));
     }
 
     @Test
@@ -389,5 +390,81 @@ class EventControllerTest {
         assertThatThrownBy(() ->
                 eventService.updateEvent(existingEvent.getId(), request, differentUserId))
                 .isInstanceOf(AccessDeniedException.class);
+    }
+
+    @Test
+    void shouldCreateEventFromMultipartFormWithImage() throws Exception {
+        var cookie = loginAs(adminUser, "adminpass");
+        var image = new org.springframework.mock.web.MockMultipartFile(
+                "image", "banner.png", "image/png", new byte[]{(byte) 0x89, 0x50});
+
+        mockMvc.perform(multipart("/api/events")
+                        .file(image)
+                        .param("title", "Multipart Gala")
+                        .param("description", "A sufficiently long description for the gala event")
+                        .param("date", "2026-12-01")
+                        .param("time", "19:00")
+                        .param("location", "Grand Hall")
+                        .param("category", "Fundraiser")
+                        .param("status", "upcoming")
+                        .cookie(cookie))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Multipart Gala"))
+                .andExpect(jsonPath("$.image").value(
+                        org.hamcrest.Matchers.startsWith("/api/uploads/events/")));
+    }
+
+    @Test
+    void shouldUpdateEventFromMultipartFormKeepingImageWhenOmitted() throws Exception {
+        var cookie = loginAs(adminUser, "adminpass");
+        var image = new org.springframework.mock.web.MockMultipartFile(
+                "image", "banner.png", "image/png", new byte[]{(byte) 0x89, 0x50});
+
+        var created = mockMvc.perform(multipart("/api/events")
+                        .file(image)
+                        .param("title", "Keep Image Event")
+                        .param("description", "A sufficiently long description for this event")
+                        .param("date", "2026-12-01")
+                        .param("time", "19:00")
+                        .param("location", "Grand Hall")
+                        .param("category", "Health")
+                        .param("status", "upcoming")
+                        .cookie(cookie))
+                .andExpect(status().isCreated())
+                .andReturn();
+        String id = com.jayway.jsonpath.JsonPath.read(created.getResponse().getContentAsString(), "$.id");
+        String imageUrl = com.jayway.jsonpath.JsonPath.read(created.getResponse().getContentAsString(), "$.image");
+
+        mockMvc.perform(multipart("/api/events/" + id)
+                        .with(request -> {
+                            request.setMethod("PUT");
+                            return request;
+                        })
+                        .param("title", "Keep Image Event Updated")
+                        .param("description", "A sufficiently long description for this event")
+                        .param("date", "2026-12-01")
+                        .param("time", "19:00")
+                        .param("location", "Grand Hall")
+                        .param("category", "Health")
+                        .param("status", "upcoming")
+                        .cookie(cookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.image").value(imageUrl));
+    }
+
+    @Test
+    void shouldRejectMultipartFormWithInvalidCategory() throws Exception {
+        var cookie = loginAs(adminUser, "adminpass");
+
+        mockMvc.perform(multipart("/api/events")
+                        .param("title", "Bad Category Event")
+                        .param("description", "A sufficiently long description for this event")
+                        .param("date", "2026-12-01")
+                        .param("time", "19:00")
+                        .param("location", "Grand Hall")
+                        .param("category", "Nope")
+                        .param("status", "upcoming")
+                        .cookie(cookie))
+                .andExpect(status().isBadRequest());
     }
 }

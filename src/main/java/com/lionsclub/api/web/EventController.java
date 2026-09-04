@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import java.util.Map;
 import java.util.UUID;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -23,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartHttpServletRequest;
 
 @RestController
 @RequestMapping("/api/events")
@@ -89,11 +91,88 @@ public class EventController {
         if (principal == null) {
             return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
         }
-        var event = eventService.updateEvent(id, request, principal.userId());
-        if (event == null) {
-            return ResponseEntity.notFound().build();
+        try {
+            var event = eventService.updateEvent(id, request, principal.userId());
+            if (event == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(event);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
         }
-        return ResponseEntity.ok(event);
+    }
+
+    @Operation(summary = "Create an event from a form",
+            description = "Admin only. Accepts multipart form fields (title, description, date, time, location, category, status, image file or URL) as sent by the admin event form.")
+    @ApiResponse(responseCode = "201", description = "Event created")
+    @ApiResponse(responseCode = "400", description = "Validation error")
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> createEventFromForm(MultipartHttpServletRequest request,
+                                                 @AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+        }
+        var form = parseForm(request);
+        if (form == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Title, description, date, time, location and category are required"));
+        }
+        try {
+            String imageUrl = eventService.storeImage(request.getFile("image"), trim(request.getParameter("image")), null);
+            var event = eventService.createEvent(principal.userId(), form, imageUrl);
+            return ResponseEntity.status(201).body(event);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    @Operation(summary = "Update an event from a form",
+            description = "Admin only. Accepts multipart form fields. Omitted image keeps the current one.")
+    @PutMapping(value = "/{id}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<?> updateEventFromForm(@PathVariable UUID id, MultipartHttpServletRequest request,
+                                                 @AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of("message", "Unauthorized"));
+        }
+        var form = parseForm(request);
+        if (form == null) {
+            return ResponseEntity.badRequest().body(Map.of("message", "Title, description, date, time, location and category are required"));
+        }
+        try {
+            String imageParam = trim(request.getParameter("image"));
+            var current = eventService.getEvent(id);
+            if (current == null) {
+                return ResponseEntity.notFound().build();
+            }
+            String imageUrl = eventService.storeImage(request.getFile("image"), imageParam, current.image());
+            var event = eventService.updateEvent(id, form, principal.userId(), imageUrl, true);
+            if (event == null) {
+                return ResponseEntity.notFound().build();
+            }
+            return ResponseEntity.ok(event);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
+    }
+
+    private EventRequest parseForm(MultipartHttpServletRequest request) {
+        String title = trim(request.getParameter("title"));
+        String description = trim(request.getParameter("description"));
+        String date = trim(request.getParameter("date"));
+        String time = trim(request.getParameter("time"));
+        String location = trim(request.getParameter("location"));
+        String category = trim(request.getParameter("category"));
+        if (title == null || title.length() < 3 || title.length() > 200
+                || description == null || description.length() < 10 || description.length() > 2000
+                || date == null || date.isBlank() || time == null || time.isBlank()
+                || location == null || location.length() < 3 || location.length() > 200
+                || category == null || category.isBlank()) {
+            return null;
+        }
+        return new EventRequest(title, description, date, time, location, category, trim(request.getParameter("status")));
+    }
+
+    private static String trim(String value) {
+        return value == null ? null : value.trim();
     }
 
     @Operation(summary = "Delete an event",

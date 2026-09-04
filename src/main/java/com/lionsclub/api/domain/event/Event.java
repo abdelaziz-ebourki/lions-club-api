@@ -58,6 +58,9 @@ public class Event {
     @Column(columnDefinition = "TEXT")
     private String address;
 
+    @Column(name = "image_url")
+    private String imageUrl;
+
     @Column(name = "max_attendees")
     private Integer maxAttendees;
 

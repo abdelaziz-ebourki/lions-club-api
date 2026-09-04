@@ -3,6 +3,7 @@ package com.lionsclub.api.config;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.test.context.ActiveProfiles;
 
 import javax.sql.DataSource;
@@ -12,6 +13,7 @@ import java.sql.ResultSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@ImportTestcontainers(com.lionsclub.api.TestcontainersConfiguration.class)
 @ActiveProfiles("dev")
 class FlywayMigrationTest {
 

@@ -3,6 +3,7 @@ package com.lionsclub.api.config;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.testcontainers.context.ImportTestcontainers;
 import org.springframework.test.context.ActiveProfiles;
 
 import javax.sql.DataSource;
@@ -12,6 +13,7 @@ import java.sql.ResultSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest
+@ImportTestcontainers(com.lionsclub.api.TestcontainersConfiguration.class)
 @ActiveProfiles("dev")
 class SchemaValidationTest {
 
@@ -54,6 +56,24 @@ class SchemaValidationTest {
 
             assertThat(rs.next()).isTrue();
             assertThat(rs.getString("column_name")).isEqualTo("updated_at");
+
+            assertThat(rs.next()).isTrue();
+            assertThat(rs.getString("column_name")).isEqualTo("email_verified");
+
+            assertThat(rs.next()).isTrue();
+            assertThat(rs.getString("column_name")).isEqualTo("avatar_url");
+
+            assertThat(rs.next()).isTrue();
+            assertThat(rs.getString("column_name")).isEqualTo("verification_token");
+
+            assertThat(rs.next()).isTrue();
+            assertThat(rs.getString("column_name")).isEqualTo("verification_token_expires_at");
+
+            assertThat(rs.next()).isTrue();
+            assertThat(rs.getString("column_name")).isEqualTo("password_reset_token");
+
+            assertThat(rs.next()).isTrue();
+            assertThat(rs.getString("column_name")).isEqualTo("password_reset_token_expires_at");
 
             assertThat(rs.next()).isFalse();
         }

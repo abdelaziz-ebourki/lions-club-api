@@ -4,8 +4,10 @@ import com.lionsclub.api.security.AuthService;
 import com.lionsclub.api.security.JwtConfig;
 import com.lionsclub.api.security.UserPrincipal;
 import com.lionsclub.api.web.dto.AuthResponse;
+import com.lionsclub.api.web.dto.ForgotPasswordRequest;
 import com.lionsclub.api.web.dto.LoginRequest;
 import com.lionsclub.api.web.dto.RegisterRequest;
+import com.lionsclub.api.web.dto.ResetPasswordRequest;
 import com.lionsclub.api.web.dto.UserResponse;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -23,6 +25,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -55,15 +58,13 @@ public class AuthController {
     }
 
     @Operation(summary = "Register a new user",
-            description = "Creates a new user account with email, password, first name, and last name. Returns auth_token cookie on success.")
+            description = "Creates a new user account with display name, email and password. Returns auth_token cookie on success.")
     @ApiResponse(responseCode = "201", description = "Registration successful, auth_token cookie set")
     @ApiResponse(responseCode = "400", description = "Validation error")
     @ApiResponse(responseCode = "409", description = "Email already registered")
     @PostMapping("/register")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest request) {
-        var result = authService.register(
-                request.email(), request.password(),
-                request.firstName(), request.lastName());
+        var result = authService.register(request.email(), request.password(), request.name());
         if (result.success()) {
             return ResponseEntity.status(201)
                     .header(HttpHeaders.SET_COOKIE, createAuthCookie(result.token(), jwtConfig.getExpiration()))
@@ -116,6 +117,64 @@ public class AuthController {
         return ResponseEntity.ok()
                 .header(HttpHeaders.SET_COOKIE, createAuthCookie(token, jwtConfig.getExpiration()))
                 .body(new AuthResponse("Token refreshed"));
+    }
+
+    @Operation(summary = "Resend verification email",
+            description = "Issues a new email verification token for the authenticated user. The token is logged server-side until mail delivery is configured.")
+    @ApiResponse(responseCode = OK, description = "Verification token issued")
+    @ApiResponse(responseCode = "401", description = "Not authenticated or invalid token")
+    @PostMapping("/resend-verification")
+    public ResponseEntity<?> resendVerification(@AuthenticationPrincipal UserPrincipal principal) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of(ERROR_FIELD, ERROR_UNAUTHORIZED));
+        }
+        authService.resendVerification(principal.userId());
+        return ResponseEntity.ok(Map.of("message", "Verification email sent"));
+    }
+
+    @Operation(summary = "Verify email address",
+            description = "Verifies the authenticated user's email address using the token from the verification link.")
+    @ApiResponse(responseCode = OK, description = "Email verified")
+    @ApiResponse(responseCode = "400", description = "Invalid or expired token")
+    @ApiResponse(responseCode = "401", description = "Not authenticated or invalid token")
+    @PostMapping("/verify-email")
+    public ResponseEntity<?> verifyEmail(
+            @AuthenticationPrincipal UserPrincipal principal,
+            @RequestParam("token") String token) {
+        if (principal == null) {
+            return ResponseEntity.status(401).body(Map.of(ERROR_FIELD, ERROR_UNAUTHORIZED));
+        }
+        var result = authService.verifyEmail(token);
+        if (!result.ok()) {
+            return ResponseEntity.badRequest().body(Map.of(ERROR_FIELD, result.error()));
+        }
+        return ResponseEntity.ok(Map.of("message", "Email verified successfully"));
+    }
+
+    @Operation(summary = "Request password reset",
+            description = "Issues a password reset token for the given email. Always returns success to avoid leaking registered emails. The token is logged server-side until mail delivery is configured.")
+    @ApiResponse(responseCode = OK, description = "Reset token issued if the email is registered")
+    @ApiResponse(responseCode = "400", description = "Validation error")
+    @PostMapping("/forgot-password")
+    public ResponseEntity<?> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.email());
+        return ResponseEntity.ok(Map.of("message", "If the email is registered, a reset link has been sent"));
+    }
+
+    @Operation(summary = "Reset password",
+            description = "Sets a new password using the token from the reset link.")
+    @ApiResponse(responseCode = OK, description = "Password reset")
+    @ApiResponse(responseCode = "400", description = "Invalid or expired token, or passwords do not match")
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        if (!request.password().equals(request.confirmPassword())) {
+            return ResponseEntity.badRequest().body(Map.of(ERROR_FIELD, "Passwords do not match"));
+        }
+        var result = authService.resetPassword(request.token(), request.password());
+        if (!result.ok()) {
+            return ResponseEntity.badRequest().body(Map.of(ERROR_FIELD, result.error()));
+        }
+        return ResponseEntity.ok(Map.of("message", "Password reset successfully"));
     }
 
     private String createAuthCookie(String token, Duration maxAge) {

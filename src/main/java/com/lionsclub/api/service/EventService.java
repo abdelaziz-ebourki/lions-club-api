@@ -34,6 +34,8 @@ public class EventService {
     private final EventRepository eventRepository;
     private final RsvpRepository rsvpRepository;
     private final UserRepository userRepository;
+    private final FileStorageService fileStorageService;
+    private final NotificationService notificationService;
 
     public List<EventResponse> listEvents(String statusFilter) {
         var now = LocalDateTime.now();
@@ -61,6 +63,11 @@ public class EventService {
 
     @Transactional
     public EventResponse createEvent(UUID createdByUserId, EventRequest request) {
+        return createEvent(createdByUserId, request, null);
+    }
+
+    @Transactional
+    public EventResponse createEvent(UUID createdByUserId, EventRequest request, String imageUrl) {
         var creator = userRepository.findById(createdByUserId).orElseThrow(
                 () -> new IllegalArgumentException("User not found: " + createdByUserId));
 
@@ -75,17 +82,29 @@ public class EventService {
         event.setStartDateTime(startDateTime);
         event.setEndDateTime(endDateTime);
         event.setLocation(request.location());
-        event.setCategory(EventCategory.valueOf(request.category().toUpperCase(Locale.ROOT)));
+        event.setCategory(parseCategory(request.category()));
         event.setStatus(EventStatus.PUBLISHED);
+        event.setImageUrl(imageUrl);
         event.setCreatedBy(creator);
 
-        var saved = eventRepository.save(event);
-        return toResponse(saved);
+        var saved = toResponse(eventRepository.save(event));
+        notificationService.notifyAll(
+                NotificationService.TYPE_EVENT_UPDATE,
+                "New event published",
+                saved.title(),
+                "/events/" + saved.id());
+        return saved;
     }
 
     @Transactional
     @PreAuthorize("principal.userId == #userId or principal.role == T(com.lionsclub.api.domain.user.Role).ADMIN")
     public EventResponse updateEvent(UUID id, EventRequest request, UUID userId) {
+        return updateEvent(id, request, userId, null, false);
+    }
+
+    @Transactional
+    @PreAuthorize("principal.userId == #userId or principal.role == T(com.lionsclub.api.domain.user.Role).ADMIN")
+    public EventResponse updateEvent(UUID id, EventRequest request, UUID userId, String imageUrl, boolean imageProvided) {
         var event = eventRepository.findById(id);
         if (event.isEmpty()) {
             return null;
@@ -102,7 +121,10 @@ public class EventService {
         existing.setStartDateTime(startDateTime);
         existing.setEndDateTime(endDateTime);
         existing.setLocation(request.location());
-        existing.setCategory(EventCategory.valueOf(request.category().toUpperCase(Locale.ROOT)));
+        existing.setCategory(parseCategory(request.category()));
+        if (imageProvided) {
+            existing.setImageUrl(imageUrl);
+        }
 
         if (request.status() != null && !request.status().isBlank()) {
             existing.setStatus(mapStatus(request.status()));
@@ -110,6 +132,24 @@ public class EventService {
 
         var saved = eventRepository.save(existing);
         return toResponse(saved);
+    }
+
+    public String storeImage(org.springframework.web.multipart.MultipartFile imageFile, String imageParam, String current) {
+        if (imageFile != null && !imageFile.isEmpty()) {
+            return fileStorageService.store("events", imageFile);
+        }
+        if (imageParam != null && !imageParam.isBlank()) {
+            return imageParam;
+        }
+        return current;
+    }
+
+    private EventCategory parseCategory(String category) {
+        try {
+            return EventCategory.valueOf(category.toUpperCase(Locale.ROOT));
+        } catch (IllegalArgumentException | NullPointerException e) {
+            throw new IllegalArgumentException("Invalid category: " + category, e);
+        }
     }
 
     @Transactional
@@ -141,6 +181,7 @@ public class EventService {
                 event.getLocation(),
                 event.getCategory().name(),
                 deriveFrontendStatus(event),
+                event.getImageUrl(),
                 rsvpCount,
                 rsvpBreakdown,
                 event.getCreatedAt(),
