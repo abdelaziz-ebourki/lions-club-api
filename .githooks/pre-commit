@@ -6,11 +6,22 @@
 
 echo "🛡️  Running pre-commit checks..."
 
+# Toolchain: project targets Java 21 (Temurin preferred; error-prone breaks on newer JDKs).
+if [ -z "$JAVA_HOME" ]; then
+    if [ -d "$HOME/.jdk/jdk-21.0.12.1+1" ]; then
+        export JAVA_HOME="$HOME/.jdk/jdk-21.0.12.1+1"
+    fi
+fi
+# Writable upload dir for file-upload tests (default /app/uploads is not writable outside docker).
+export UPLOAD_DIR="${UPLOAD_DIR:-/tmp/lions-uploads}"
+# Small pool: the suite holds many Spring contexts; don't exhaust a shared DB.
+MVN_TEST_FLAGS="-Dspring.datasource.hikari.maximum-pool-size=2"
+
 STASH_NAME="pre-commit-$(date +%s)"
 git stash --quiet --keep-index --include-untracked -- "$STASH_NAME"
 STASH_RESULT=$?
 
-./mvnw test -q
+./mvnw test -q $MVN_TEST_FLAGS
 TEST_RESULT=$?
 
 if [ "$STASH_RESULT" = "0" ] && git stash list | grep -q "$STASH_NAME"; then
