@@ -140,4 +140,13 @@ public class ForumController {
         }
         return ResponseEntity.status(201).body(result.reply());
     }
+
+    @Operation(summary = "Delete reply", description = "Deletes a single reply. Admin only.")
+    @DeleteMapping("/replies/{id}")
+    public ResponseEntity<?> deleteReply(@PathVariable UUID id) {
+        if (!forumService.deleteReply(id)) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(Map.of("success", true));
+    }
 }

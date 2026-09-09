@@ -12,10 +12,11 @@ import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+// NOTE: datasource intentionally NOT overridden here — this test must honor
+// the same ambient DB as the rest of the suite (default localhost:5432,
+// overridable via SPRING_DATASOURCE_URL). A hardcoded URL would silently
+// ignore the override and couple the suite to one fixed port.
 @SpringBootTest(properties = {
-    "spring.datasource.url=jdbc:postgresql://localhost:5432/lions_club",
-    "spring.datasource.username=lions_club",
-    "spring.datasource.password=lions_club_dev",
     "app.jwt.secret=test_secret"
 })
 @AutoConfigureMockMvc

@@ -95,6 +95,18 @@ class ForumControllerTest {
         return result.getResponse().getContentAsString();
     }
 
+    private String createReply(Cookie cookie, String threadId, String content) throws Exception {
+        var result = mockMvc.perform(post("/api/forum/replies")
+                        .cookie(cookie)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"threadId": "%s", "content": "%s"}
+                                """.formatted(threadId, content)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return JsonPath.read(result.getResponse().getContentAsString(), "$.id");
+    }
+
     @Test
     void categories_shouldBeSeededAndPublic() throws Exception {
         mockMvc.perform(get("/api/forum/categories"))
@@ -169,6 +181,40 @@ class ForumControllerTest {
 
         mockMvc.perform(get("/api/forum/" + GENERAL_CATEGORY + "/" + threadId))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void replyDelete_asAdmin_shouldDeleteSingleReply() throws Exception {
+        String threadId = JsonPath.read(createThread(memberCookie, "Mod Queue Thread"), "$.id");
+        String replyId = createReply(otherCookie, threadId, "This reply will be moderated away.");
+
+        mockMvc.perform(delete("/api/forum/replies/" + replyId).cookie(adminCookie))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        mockMvc.perform(get("/api/forum/" + GENERAL_CATEGORY + "/" + threadId).cookie(memberCookie))
+                .andExpect(jsonPath("$.replyCount").value(0));
+    }
+
+    @Test
+    void replyDelete_unknownId_shouldReturn404() throws Exception {
+        mockMvc.perform(delete("/api/forum/replies/" + UUID.randomUUID()).cookie(adminCookie))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void replyDelete_asMember_shouldReturn403() throws Exception {
+        String threadId = JsonPath.read(createThread(memberCookie, "Member Mod Thread"), "$.id");
+        String replyId = createReply(otherCookie, threadId, "Members cannot delete replies.");
+
+        mockMvc.perform(delete("/api/forum/replies/" + replyId).cookie(memberCookie))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void replyDelete_anonymous_shouldReturn401() throws Exception {
+        mockMvc.perform(delete("/api/forum/replies/" + UUID.randomUUID()))
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

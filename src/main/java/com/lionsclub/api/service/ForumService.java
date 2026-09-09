@@ -119,6 +119,14 @@ public class ForumService {
         return true;
     }
 
+    public boolean deleteReply(UUID replyId) {
+        if (!replyRepository.existsById(replyId)) {
+            return false;
+        }
+        replyRepository.deleteById(replyId);
+        return true;
+    }
+
     public Optional<List<ForumResponse.ForumReplyResponse>> listReplies(UUID threadId) {
         if (!threadRepository.existsById(threadId)) {
             return Optional.empty();
