@@ -92,7 +92,7 @@ src/
 
 - Spring Boot 3.4.4
 - Java 21
-- PostgreSQL 15
+- PostgreSQL 16
 - Flyway
 - SpringDoc OpenAPI
 - JWT (Auth0)
