@@ -8,9 +8,9 @@ spring:
     active: dev
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/lions_club
-    username: lions_club
-    password: lions_club_dev
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/lions_club}
+    username: ${DB_USERNAME:lions_club}
+    password: ${DB_PASSWORD:lions_club_dev}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -33,7 +33,7 @@ app:
   upload:
     dir: ${UPLOAD_DIR:/app/uploads}
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://localhost:5174}
 
 springdoc:
   api-docs:

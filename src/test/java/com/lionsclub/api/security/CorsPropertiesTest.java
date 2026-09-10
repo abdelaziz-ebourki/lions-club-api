@@ -8,9 +8,9 @@ import org.junit.jupiter.api.Test;
 class CorsPropertiesTest {
 
     @Test
-    void shouldDefaultToCanonicalLocalUiOrigin() {
+    void shouldDefaultToCanonicalLocalUiOrigins() {
         assertThat(new CorsProperties().getAllowedOrigins())
-                .containsExactly("http://localhost:5173");
+                .containsExactly("http://localhost:5173", "http://localhost:5174");
     }
 
     @Test

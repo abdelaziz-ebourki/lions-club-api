@@ -12,5 +12,5 @@ import org.springframework.context.annotation.Configuration;
 @ConfigurationProperties(prefix = "app.cors")
 public class CorsProperties {
 
-    private List<String> allowedOrigins = List.of("http://localhost:5173");
+    private List<String> allowedOrigins = List.of("http://localhost:5173", "http://localhost:5174");
 }

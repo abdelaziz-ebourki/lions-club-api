@@ -3,9 +3,9 @@ spring:
     show-sql: false
 
   datasource:
-    url: ${DB_URL}
-    username: ${DB_USERNAME}
-    password: ${DB_PASSWORD}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/lions_club}
+    username: ${DB_USERNAME:lions_club}
+    password: ${DB_PASSWORD:lions_club_dev}
 
 springdoc:
   api-docs:

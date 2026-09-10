@@ -1,10 +1,14 @@
+# One-command backend: database + API.
+# Usage: cp .env.example .env && docker compose up --build -d
+# Host dev variant (API on host, DB in Docker): docker compose up -d db
+# then ./mvnw spring-boot:run
 services:
   db:
     image: postgres:15-alpine
     container_name: lions-club-db
     restart: unless-stopped
     ports:
-      - "5432:5432"
+      - "${PG_PORT:-5433}:5432"
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-lions_club}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-lions_club_dev}
@@ -17,5 +21,26 @@ services:
       timeout: 5s
       retries: 5
 
+  api:
+    build: .
+    container_name: lions-club-api
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8081}:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-lions_club}
+      DB_USERNAME: ${POSTGRES_USER:-lions_club}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-lions_club_dev}
+      JWT_SECRET: ${JWT_SECRET:-CHANGEME_IN_PRODUCTION_dev_secret_key_lions_club_fsbm_2026}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:5174}
+      APP_JWT_SECURE: ${APP_JWT_SECURE:-true}
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - uploads:/app/uploads
+
 volumes:
   pgdata:
+  uploads:
