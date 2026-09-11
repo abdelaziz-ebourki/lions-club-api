@@ -34,7 +34,7 @@ public class AuthService {
 
     private static final String DUMMY_PASSWORD_HASH = "$2a$10$EixZaYVK1fsbw1ZfbX3OXePaWxn96p36PQm4sEPhMNPfFhpYNnfOq";
 
-    public AuthResult login(String email, String password) {
+    public AuthResult login(String email, String password, boolean rememberMe) {
         var userOpt = userRepository.findByEmail(email);
         var user = userOpt.orElse(null);
         String expectedHash = user != null ? user.getPasswordHash() : DUMMY_PASSWORD_HASH;
@@ -47,8 +47,9 @@ public class AuthService {
             return AuthResult.failure("Invalid credentials");
         }
 
-        String token = jwtTokenProvider.createToken(user.getId(), user.getEmail(), user.getRole(), user.getFirstName(), user.getLastName());
-        return AuthResult.success(token);
+        var expiration = rememberMe ? jwtTokenProvider.getRememberMeExpiration() : jwtTokenProvider.getDefaultExpiration();
+        String token = jwtTokenProvider.createToken(user.getId(), user.getEmail(), user.getRole(), user.getFirstName(), user.getLastName(), expiration);
+        return AuthResult.success(token, expiration);
     }
 
     @Transactional
@@ -164,13 +165,17 @@ public class AuthService {
         return Base64.getUrlEncoder().withoutPadding().encodeToString(bytes);
     }
 
-    public record AuthResult(boolean success, String token, String error) {
+    public record AuthResult(boolean success, String token, String error, java.time.Duration expiration) {
         public static AuthResult success(String token) {
-            return new AuthResult(true, token, null);
+            return new AuthResult(true, token, null, null);
+        }
+
+        public static AuthResult success(String token, java.time.Duration expiration) {
+            return new AuthResult(true, token, null, expiration);
         }
 
         public static AuthResult failure(String error) {
-            return new AuthResult(false, null, error);
+            return new AuthResult(false, null, error, null);
         }
     }
 

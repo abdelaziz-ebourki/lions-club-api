@@ -10,6 +10,7 @@ import com.lionsclub.api.TestcontainersConfiguration;
 import com.lionsclub.api.domain.user.Role;
 import com.lionsclub.api.domain.user.User;
 import com.lionsclub.api.infrastructure.persistence.UserRepository;
+import com.lionsclub.api.security.JwtTokenProvider;
 import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,9 @@ class AuthControllerTest {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private JwtTokenProvider jwtTokenProvider;
 
     private User existingUser;
 
@@ -75,6 +79,26 @@ class AuthControllerTest {
                                 """))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.error").value("Invalid credentials"));
+    }
+
+    @Test
+    void shouldExtendSessionTo30DaysWhenRememberMeIsTrue() throws Exception {
+        var result = mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email": "existing@test.com", "password": "password123", "remember_me": true}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(cookie().exists("auth_token"))
+                .andExpect(cookie().maxAge("auth_token", 30 * 24 * 3600))
+                .andReturn();
+
+        var token = result.getResponse().getCookie("auth_token");
+        assert token != null;
+        var decoded = jwtTokenProvider.validateToken(token.getValue());
+        var lifetimeSeconds = decoded.getExpiresAtAsInstant().getEpochSecond()
+                - decoded.getIssuedAtAsInstant().getEpochSecond();
+        org.assertj.core.api.Assertions.assertThat(lifetimeSeconds).isEqualTo(30L * 24 * 3600);
     }
 
     @Test

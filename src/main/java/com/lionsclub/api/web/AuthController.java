@@ -47,10 +47,10 @@ public class AuthController {
     @ApiResponse(responseCode = "401", description = "Invalid credentials")
     @PostMapping("/login")
     public ResponseEntity<?> login(@Valid @RequestBody LoginRequest request) {
-        var result = authService.login(request.email(), request.password());
+        var result = authService.login(request.email(), request.password(), Boolean.TRUE.equals(request.rememberMe()));
         if (result.success()) {
             return ResponseEntity.ok()
-                    .header(HttpHeaders.SET_COOKIE, createAuthCookie(result.token(), jwtConfig.getExpiration()))
+                    .header(HttpHeaders.SET_COOKIE, createAuthCookie(result.token(), result.expiration()))
                     .body(new AuthResponse("Login successful"));
         }
         return ResponseEntity.status(401)

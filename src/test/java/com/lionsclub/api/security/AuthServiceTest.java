@@ -50,7 +50,7 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail("disabled@test.com")).thenReturn(Optional.of(user));
 
-        var result = authService.login("disabled@test.com", "password123");
+        var result = authService.login("disabled@test.com", "password123", false);
 
         assertThat(result.success()).isFalse();
         assertThat(result.error()).isEqualTo("Invalid credentials");

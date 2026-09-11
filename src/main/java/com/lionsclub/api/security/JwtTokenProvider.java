@@ -23,7 +23,19 @@ public class JwtTokenProvider {
         this.verifier = JWT.require(algorithm).build();
     }
 
+    public java.time.Duration getDefaultExpiration() {
+        return jwtConfig.getExpiration();
+    }
+
+    public java.time.Duration getRememberMeExpiration() {
+        return jwtConfig.getRememberMeExpiration();
+    }
+
     public String createToken(UUID userId, String email, Role role, String firstName, String lastName) {
+        return createToken(userId, email, role, firstName, lastName, jwtConfig.getExpiration());
+    }
+
+    public String createToken(UUID userId, String email, Role role, String firstName, String lastName, java.time.Duration expiration) {
         var now = Instant.now();
         return JWT.create()
                 .withSubject(userId.toString())
@@ -32,7 +44,7 @@ public class JwtTokenProvider {
                 .withClaim("firstName", firstName)
                 .withClaim("lastName", lastName)
                 .withIssuedAt(now)
-                .withExpiresAt(now.plus(jwtConfig.getExpiration()))
+                .withExpiresAt(now.plus(expiration))
                 .sign(algorithm);
     }
 

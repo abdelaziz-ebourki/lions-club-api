@@ -15,6 +15,7 @@ public class JwtConfig {
 
     private String secret;
     private Duration expiration = Duration.ofMinutes(15);
+    private Duration rememberMeExpiration = Duration.ofDays(30);
     private boolean secure;
 
     @PostConstruct
