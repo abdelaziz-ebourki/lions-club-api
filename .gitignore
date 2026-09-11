@@ -17,3 +17,8 @@ mvnw.cmd
 .agents/
 .env
 uploads/
+
+# Coding-agent scaffolding (implementation only in this repo)
+specs/
+.specify/
+skills-lock.json
