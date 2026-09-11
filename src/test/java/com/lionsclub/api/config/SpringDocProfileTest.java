@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 // NOTE: datasource intentionally NOT overridden here — this test must honor
-// the same ambient DB as the rest of the suite (default localhost:5432,
+// the same ambient DB as the rest of the suite (default localhost:5433,
 // overridable via SPRING_DATASOURCE_URL). A hardcoded URL would silently
 // ignore the override and couple the suite to one fixed port.
 @SpringBootTest(properties = {
