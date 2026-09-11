@@ -36,6 +36,9 @@ public class ForumService {
                 .toList();
     }
 
+    // PMD 7.x does not see the this::toCategoryResponse method reference above
+    // (same false positive as RsvpService.toResponseWithMember, July 2026).
+    @SuppressWarnings("PMD.UnusedPrivateMethod")
     private ForumResponse.ForumCategoryResponse toCategoryResponse(ForumCategory category) {
         var threads = threadRepository.findByCategoryIdOrderByLastActivityDesc(category.getId());
         long postCount = threads.size() + threads.stream()
