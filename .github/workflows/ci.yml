@@ -49,7 +49,8 @@ jobs:
 
       - name: Build and test
         id: build-and-test
-        run: ./mvnw verify -q
+        # Small pool: the suite holds many Spring contexts; don't exhaust the shared DB.
+        run: ./mvnw verify -q -Dspring.datasource.hikari.maximum-pool-size=2
         env:
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/lions_club
           SPRING_DATASOURCE_USERNAME: lions_club
