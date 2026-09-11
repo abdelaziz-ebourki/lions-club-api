@@ -52,6 +52,8 @@ jobs:
         # Small pool: the suite holds many Spring contexts; don't exhaust the shared DB.
         run: ./mvnw verify -q -Dspring.datasource.hikari.maximum-pool-size=2
         env:
+          # Writable upload dir for file-upload tests (default /app/uploads is not writable outside Docker).
+          UPLOAD_DIR: /tmp/lions-uploads
           SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5432/lions_club
           SPRING_DATASOURCE_USERNAME: lions_club
           SPRING_DATASOURCE_PASSWORD: lions_club_dev
