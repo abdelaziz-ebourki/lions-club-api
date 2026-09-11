@@ -79,8 +79,12 @@ Set with `SPRING_PROFILES_ACTIVE=prod`.
 ```
 src/
 ├── main/java/com/lionsclub/api/
-│   ├── config/          # OpenAPI, security, app config
+│   ├── config/          # OpenAPI, seeders, app config
 │   ├── domain/          # Domain entities by sub-package
+│   ├── infrastructure/  # JPA repositories
+│   ├── security/        # JWT, filters, SecurityConfig
+│   ├── service/         # Application services
+│   ├── web/             # Controllers + DTOs
 │   └── LionsClubApiApplication.java
 └── main/resources/
     ├── application.yml
